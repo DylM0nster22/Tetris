@@ -2,6 +2,9 @@ body {
   background: linear-gradient(45deg, #000428, #004e92);
   animation: gradientShift 10s infinite alternate;
   color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 @keyframes gradientShift {

@@ -233,33 +233,20 @@ document.addEventListener('keydown', event => {
 
 function clearLines() {
   let linesCleared = 0;
-  const rowsToClear = [];
 
-  board.forEach((row, y) => {
-    if (row.every(cell => cell !== 0)) {
-      rowsToClear.push(y);
+  for (let y = ROWS - 1; y >= 0; y--) {
+    if (board[y].every(cell => cell !== 0)) {
       linesCleared++;
+      // Remove the cleared row
+      board.splice(y, 1);
+      // Add a new empty row at the top
+      board.unshift(Array(COLS).fill(0));
+      y++; // Check the new row at this index
     }
-  });
+  }
 
-  if (linesCleared > 0) {
-    rowsToClear.forEach(y => {
-      board[y] = board[y].map(() => 0);
-    });
-
-    setTimeout(() => {
-      board = board.filter(row => row.some(cell => cell === 0));
-      while (board.length < ROWS) {
-        board.unshift(Array(COLS).fill(0));
-      }
-
-      if (linesCleared === 4) showQuadMessage();
-    }, 200); // Delay to show animation
-    
-    linesClearedTotal += linesCleared;
-    if (linesClearedTotal % 10 === 0) {
-      dropInterval = Math.max(200, dropInterval - 100); // Increase speed
-    }
+  if (linesCleared === 4) {
+    showQuadMessage();
   }
 }
 
