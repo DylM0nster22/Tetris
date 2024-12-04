@@ -1,1 +1,26 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tetris</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="game-container">
+    <canvas id="gameCanvas" width="300" height="600"></canvas>
+    <div class="info-panel">
+      <div class="next-piece">
+        <h3>Next</h3>
+        <canvas id="nextCanvas" width="100" height="100"></canvas>
+      </div>
+      <div class="hold-piece">
+        <h3>Hold</h3>
+        <canvas id="holdCanvas" width="100" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+  <div id="quadMessage" class="hidden">QUAD!</div>
+  <script src="script.js"></script>
+</body>
+</html>
