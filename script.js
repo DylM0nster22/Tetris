@@ -43,6 +43,16 @@ function drawBlock(ctx, x, y, color) {
 
 function drawBoard(ctx, board) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw the grid
+  ctx.strokeStyle = '#444'; // Faint grid color
+  for (let x = 0; x < COLS; x++) {
+    for (let y = 0; y < ROWS; y++) {
+      ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    }
+  }
+
+  // Draw the blocks
   for (let y = 0; y < board.length; y++) {
     for (let x = 0; x < board[y].length; x++) {
       if (board[y][x] !== 0) {
@@ -52,6 +62,14 @@ function drawBoard(ctx, board) {
   }
 }
 
+function getShadowPiece(piece) {
+  const shadowPiece = { ...piece };
+  while (isValidMove(shadowPiece, 0, 1)) {
+    shadowPiece.y++;
+  }
+  return shadowPiece;
+}
+
 // Piece-related functions
 function generatePiece() {
   const id = Math.floor(Math.random() * (TETROMINOS.length - 1)) + 1;
@@ -59,11 +77,12 @@ function generatePiece() {
   return { id, shape, x: 3, y: 0 };
 }
 
-function drawPiece(ctx, piece) {
+function drawPiece(ctx, piece, isShadow = false) {
   piece.shape.forEach((row, dy) => {
     row.forEach((value, dx) => {
       if (value !== 0) {
-        drawBlock(ctx, piece.x + dx, piece.y + dy, COLORS[value]);
+        const color = isShadow ? 'rgba(255, 255, 255, 0.3)' : COLORS[value];
+        drawBlock(ctx, piece.x + dx, piece.y + dy, color);
       }
     });
   });
@@ -119,8 +138,12 @@ function update(time = 0) {
     dropPiece();
     lastDropTime = time;
   }
+  
+  const shadowPiece = getShadowPiece(currentPiece);
+
   drawBoard(ctx, board);
-  drawPiece(ctx, currentPiece);
+  drawPiece(ctx, shadowPiece, true); // Draw shadow piece
+  drawPiece(ctx, currentPiece); // Draw current piece
   drawNextPiece();
   requestAnimationFrame(update);
 }
@@ -214,7 +237,7 @@ function clearLines() {
   }
 
   if (linesCleared === 4) {
-    showQuadMessage();
+    showQuadMessage(); // Show QUAD message
   }
 }
 
