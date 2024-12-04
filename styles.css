@@ -1,12 +1,12 @@
 body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #000;
-  color: #fff;
+  background: linear-gradient(45deg, #000428, #004e92);
+  animation: gradientShift 10s infinite alternate;
+  color: white;
+}
+
+@keyframes gradientShift {
+  0% { background: linear-gradient(45deg, #000428, #004e92); }
+  100% { background: linear-gradient(45deg, #004e92, #000428); }
 }
 
 .game-container {
@@ -36,13 +36,20 @@ h3 {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 2rem;
+  font-size: 48px;
   font-weight: bold;
-  color: yellow;
-  background: rgba(0, 0, 0, 0.8);
-  padding: 10px 20px;
-  border-radius: 10px;
-  display: none;
+  color: #ff4444;
+  text-shadow: 0 0 10px #ff0000, 0 0 20px #ff4444;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+#quadMessage.hidden {
+  opacity: 0;
+}
+
+#quadMessage.visible {
+  opacity: 1;
 }
 
 .hidden {

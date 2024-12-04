@@ -32,6 +32,8 @@ let dropInterval = 1000; // 1 second per drop
 let lastDropTime = 0;
 let canHold = true;
 let board = JSON.parse(JSON.stringify(BOARD));
+let linesClearedTotal = 0;
+let highScore = localStorage.getItem('highScore') || 0;
 
 // Utility functions
 function drawBlock(ctx, x, y, color) {
@@ -75,6 +77,13 @@ function generatePiece() {
   const id = Math.floor(Math.random() * (TETROMINOS.length - 1)) + 1;
   const shape = TETROMINOS[id];
   return { id, shape, x: 3, y: 0 };
+}
+
+function updateScore(newScore) {
+  if (newScore > highScore) {
+    highScore = newScore;
+    localStorage.setItem('highScore', highScore);
+  }
 }
 
 function drawPiece(ctx, piece, isShadow = false) {
@@ -224,29 +233,46 @@ document.addEventListener('keydown', event => {
 
 function clearLines() {
   let linesCleared = 0;
-  board = board.filter(row => {
+  const rowsToClear = [];
+
+  board.forEach((row, y) => {
     if (row.every(cell => cell !== 0)) {
+      rowsToClear.push(y);
       linesCleared++;
-      return false; // Remove completed row
     }
-    return true;
   });
 
-  while (board.length < ROWS) {
-    board.unshift(Array(COLS).fill(0)); // Add new empty rows at the top
-  }
+  if (linesCleared > 0) {
+    rowsToClear.forEach(y => {
+      board[y] = board[y].map(() => 0);
+    });
 
-  if (linesCleared === 4) {
-    showQuadMessage(); // Show QUAD message
+    setTimeout(() => {
+      board = board.filter(row => row.some(cell => cell === 0));
+      while (board.length < ROWS) {
+        board.unshift(Array(COLS).fill(0));
+      }
+
+      if (linesCleared === 4) showQuadMessage();
+    }, 200); // Delay to show animation
+    
+    linesClearedTotal += linesCleared;
+    if (linesClearedTotal % 10 === 0) {
+      dropInterval = Math.max(200, dropInterval - 100); // Increase speed
+    }
   }
 }
 
 function showQuadMessage() {
+  const quadMessage = document.getElementById('quadMessage');
   quadMessage.classList.remove('hidden');
+  quadMessage.classList.add('visible');
   setTimeout(() => {
+    quadMessage.classList.remove('visible');
     quadMessage.classList.add('hidden');
   }, 1000);
 }
+
 
 // Initialization
 function initGame() {
