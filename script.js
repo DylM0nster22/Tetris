@@ -28,6 +28,8 @@ const TETROMINOS = [
 let currentPiece = null;
 let nextPiece = null;
 let holdPiece = null;
+let dropInterval = 1000; // 1 second per drop
+let lastDropTime = 0;
 let canHold = true;
 let board = JSON.parse(JSON.stringify(BOARD));
 
@@ -67,10 +69,75 @@ function drawPiece(ctx, piece) {
   });
 }
 
-// Game logic
-function dropPiece() {
-  // Handle piece dropping
+function isValidMove(piece, offsetX = 0, offsetY = 0) {
+  return piece.shape.every((row, dy) =>
+    row.every((value, dx) => {
+      if (value === 0) return true; // Empty block
+      const newX = piece.x + dx + offsetX;
+      const newY = piece.y + dy + offsetY;
+      return (
+        newX >= 0 && // Inside left wall
+        newX < COLS && // Inside right wall
+        newY < ROWS && // Above bottom
+        (newY < 0 || board[newY][newX] === 0) // Empty board space or above top
+      );
+    })
+  );
 }
+
+function dropPiece() {
+  if (isValidMove(currentPiece, 0, 1)) {
+    currentPiece.y++;
+  } else {
+    lockPiece();
+    clearLines();
+    currentPiece = nextPiece;
+    nextPiece = generatePiece();
+    canHold = true; // Reset hold availability
+    if (!isValidMove(currentPiece)) {
+      alert('Game Over');
+      initGame();
+    }
+  }
+}
+
+function lockPiece() {
+  currentPiece.shape.forEach((row, dy) => {
+    row.forEach((value, dx) => {
+      if (value !== 0) {
+        const x = currentPiece.x + dx;
+        const y = currentPiece.y + dy;
+        if (y >= 0) board[y][x] = value;
+      }
+    });
+  });
+}
+
+function update(time = 0) {
+  const deltaTime = time - lastDropTime;
+  if (deltaTime > dropInterval) {
+    dropPiece();
+    lastDropTime = time;
+  }
+  drawBoard(ctx, board);
+  drawPiece(ctx, currentPiece);
+  drawNextPiece();
+  requestAnimationFrame(update);
+}
+
+function drawNextPiece() {
+  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  nextPiece.shape.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value !== 0) {
+        drawBlock(nextCtx, x, y, COLORS[value]);
+      }
+    });
+  });
+}
+
+initGame();
+requestAnimationFrame(update);
 
 function holdCurrentPiece() {
   if (!canHold) return;
@@ -97,6 +164,57 @@ function drawHold() {
         }
       });
     });
+  }
+}
+
+function rotatePiece(piece) {
+  const newShape = piece.shape[0].map((_, i) =>
+    piece.shape.map(row => row[i]).reverse()
+  );
+  const newPiece = { ...piece, shape: newShape };
+  return isValidMove(newPiece) ? newPiece : piece;
+}
+
+document.addEventListener('keydown', event => {
+  switch (event.key) {
+    case 'ArrowLeft':
+      if (isValidMove(currentPiece, -1)) currentPiece.x--;
+      break;
+    case 'ArrowRight':
+      if (isValidMove(currentPiece, 1)) currentPiece.x++;
+      break;
+    case 'ArrowDown':
+      if (isValidMove(currentPiece, 0, 1)) currentPiece.y++;
+      break;
+    case ' ':
+      while (isValidMove(currentPiece, 0, 1)) currentPiece.y++;
+      dropPiece();
+      break;
+    case 'ArrowUp':
+      currentPiece = rotatePiece(currentPiece);
+      break;
+    case 'Shift':
+      holdCurrentPiece();
+      break;
+  }
+});
+
+function clearLines() {
+  let linesCleared = 0;
+  board = board.filter(row => {
+    if (row.every(cell => cell !== 0)) {
+      linesCleared++;
+      return false; // Remove completed row
+    }
+    return true;
+  });
+
+  while (board.length < ROWS) {
+    board.unshift(Array(COLS).fill(0)); // Add new empty rows at the top
+  }
+
+  if (linesCleared === 4) {
+    showQuadMessage();
   }
 }
 
