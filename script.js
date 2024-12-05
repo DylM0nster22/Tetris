@@ -15,6 +15,7 @@ const QUEUE_SIZE = 3;
 const BLOCK_SIZE = 30;
 const BOARD = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 const COLORS = ['#000', '#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff', '#fff'];
+const menuItems = ['Resume', 'Statistics', 'Settings', 'Quit'];
 const pieceStats = {
   T: 0, O: 0, S: 0, Z: 0, I: 0, J: 0, L: 0};
 
@@ -40,6 +41,7 @@ let canHold = true;
 let score = 0;
 let level = 1;
 let backToBack = false;
+let selectedMenuItem = 0;
 let isPaused = false;
 let pauseMenuState = 'main'; // 'main', 'settings', 'stats'
 let resumeCountdown = 0;
@@ -343,27 +345,40 @@ function addParticles(y) {
 }
 
 function handlePauseMenuInput(event) {
+  if (!isPaused) return;
+
   if (pauseMenuState === 'main') {
       switch(event.key) {
+          case 'ArrowUp':
+              // Navigate menu up
+              selectedMenuItem = (selectedMenuItem - 1 + menuItems.length) % menuItems.length;
+              break;
+          case 'ArrowDown':
+              // Navigate menu down
+              selectedMenuItem = (selectedMenuItem + 1) % menuItems.length;
+              break;
           case 'Enter':
-              if (event.target.textContent === 'Resume') {
-                  togglePause();
-              } else if (event.target.textContent === 'Statistics') {
-                  pauseMenuState = 'stats';
-              } else if (event.target.textContent === 'Settings') {
-                  pauseMenuState = 'settings';
-              } else if (event.target.textContent === 'Quit') {
-                  if (confirm('Are you sure you want to quit?')) {
-                      initGame();
-                      isPaused = false;
-                  }
+              switch(selectedMenuItem) {
+                  case 0: // Resume
+                      togglePause();
+                      break;
+                  case 1: // Statistics
+                      pauseMenuState = 'stats';
+                      break;
+                  case 2: // Settings
+                      pauseMenuState = 'settings';
+                      break;
+                  case 3: // Quit
+                      if (confirm('Are you sure you want to quit?')) {
+                          initGame();
+                          isPaused = false;
+                      }
+                      break;
               }
               break;
       }
-  } else {
-      if (event.key === 'Backspace') {
-          pauseMenuState = 'main';
-      }
+  } else if (event.key === 'Backspace') {
+      pauseMenuState = 'main';
   }
 }
 
@@ -463,20 +478,11 @@ function startResumeCountdown() {
 }
 
 function drawMainPauseMenu() {
-  const buttons = [
-      { text: 'Resume', y: canvas.height * 0.3 },
-      { text: 'Statistics', y: canvas.height * 0.4 },
-      { text: 'Settings', y: canvas.height * 0.5 },
-      { text: 'Quit', y: canvas.height * 0.6 }
-  ];
-
-  ctx.fillStyle = 'white';
-  ctx.font = '30px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('PAUSED', canvas.width / 2, canvas.height * 0.2);
-
-  buttons.forEach(button => {
-      ctx.fillText(button.text, canvas.width / 2, button.y);
+  menuItems.forEach((item, index) => {
+      ctx.fillStyle = index === selectedMenuItem ? '#ff0' : 'white';
+      ctx.font = '30px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(item, canvas.width / 2, canvas.height * (0.3 + index * 0.1));
   });
 }
 
@@ -520,10 +526,14 @@ function isTSpin(piece) {
 function initGame() {
   currentPiece = generatePiece();
   nextPiece = generatePiece();
+  board = JSON.parse(JSON.stringify(BOARD));
   score = 0;
   level = 1;
   combo = 0;
-  updateDisplays(); // Add here
+  isPaused = false;
+  pauseMenuState = 'main';
+  selectedMenuItem = 0;
+  updateDisplays();
   drawBoard(ctx, board);
   drawHold();
 }
