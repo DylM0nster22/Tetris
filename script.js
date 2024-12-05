@@ -31,6 +31,8 @@ let holdPiece = null;
 let dropInterval = 1000; // 1 second per drop
 let lastDropTime = 0;
 let canHold = true;
+let score = 0;
+let level = 1;
 let board = JSON.parse(JSON.stringify(BOARD));
 
 // Utility functions
@@ -227,27 +229,55 @@ function clearLines() {
   board = board.filter(row => {
     if (row.every(cell => cell !== 0)) {
       linesCleared++;
-      return false; // Remove completed row
+      return false;
     }
     return true;
   });
 
+  // Add scoring based on lines cleared
+  switch(linesCleared) {
+    case 1: score += 100 * level; break;
+    case 2: score += 300 * level; break;
+    case 3: score += 500 * level; break;
+    case 4: score += 800 * level; break;
+  }
+
+  if (linesCleared > 0) {
+    combo++;
+    score += combo * 50; // Bonus points for combos
+  } else {
+    combo = 0;
+  }
+
+  // Level up every 10 lines
+  level = Math.floor(score / 1000) + 1;
+  dropInterval = Math.max(100, 1000 - (level * 50)); // Speed up as level increases
+
   while (board.length < ROWS) {
-    board.unshift(Array(COLS).fill(0)); // Add new empty rows at the top
-  }
-
-  if (linesCleared === 4) {
-    showQuadMessage(); // Show QUAD message
+    board.unshift(Array(COLS).fill(0));
   }
 }
+  function saveHighScore() {
+    const highScores = JSON.parse(localStorage.getItem('tetrisHighScores') || '[]');
+    highScores.push(score);
+    highScores.sort((a, b) => b - a);
+    highScores.splice(5); // Keep top 5 scores
+    localStorage.setItem('tetrisHighScores', JSON.stringify(highScores));
+  }
 
-function showQuadMessage() {
-  quadMessage.classList.remove('hidden');
-  setTimeout(() => {
-    quadMessage.classList.add('hidden');
-  }, 1000);
-}
+  // Add to game over condition
+  if (!isValidMove(currentPiece)) {
+    saveHighScore();
+    alert(`Game Over!\nScore: ${score}\nLevel: ${level}`);
+    initGame();
+  }
 
+  function showQuadMessage() {
+    quadMessage.classList.remove('hidden');
+    setTimeout(() => {
+      quadMessage.classList.add('hidden');
+    }, 1000);
+  }
 // Initialization
 function initGame() {
   currentPiece = generatePiece();
@@ -257,3 +287,36 @@ function initGame() {
 }
 
 initGame();
+
+class Particle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.speed = {
+      x: (Math.random() - 0.5) * 5,
+      y: (Math.random() - 4) * 5
+    };
+    this.size = Math.random() * 3 + 1;
+    this.life = 1;
+  }
+
+  update() {
+    this.x += this.speed.x;
+    this.y += this.speed.y;
+    this.life -= 0.01;
+  }
+
+  draw(ctx) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${this.life})`;
+    ctx.fillRect(this.x, this.y, this.size, this.size);
+  }
+}
+
+let particles = [];
+
+// Add to clearLines() when a line is cleared
+function addParticles(y) {
+  for (let i = 0; i < 50; i++) {
+    particles.push(new Particle(canvas.width / 2, y * BLOCK_SIZE));
+  }
+}
