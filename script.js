@@ -218,10 +218,19 @@ function update(time = 0) {
 
 function drawNextPiece() {
   nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  
+  // Calculate the size of the piece
+  const pieceHeight = nextPiece.shape.length;
+  const pieceWidth = nextPiece.shape[0].length;
+  
+  // Calculate center position
+  const startX = Math.floor((nextCanvas.width / BLOCK_SIZE - pieceWidth) / 2);
+  const startY = Math.floor((nextCanvas.height / BLOCK_SIZE - pieceHeight) / 2);
+  
   nextPiece.shape.forEach((row, y) => {
     row.forEach((value, x) => {
       if (value !== 0) {
-        drawBlock(nextCtx, x, y, COLORS[value]);
+        drawBlock(nextCtx, startX + x, startY + y, COLORS[value]);
       }
     });
   });
@@ -248,10 +257,18 @@ function holdCurrentPiece() {
 function drawHold() {
   holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
   if (holdPiece) {
+    // Calculate the size of the piece
+    const pieceHeight = holdPiece.shape.length;
+    const pieceWidth = holdPiece.shape[0].length;
+    
+    // Calculate center position
+    const startX = Math.floor((holdCanvas.width / BLOCK_SIZE - pieceWidth) / 2);
+    const startY = Math.floor((holdCanvas.height / BLOCK_SIZE - pieceHeight) / 2);
+    
     holdPiece.shape.forEach((row, y) => {
       row.forEach((value, x) => {
         if (value !== 0) {
-          drawBlock(holdCtx, x, y, COLORS[value]);
+          drawBlock(holdCtx, startX + x, startY + y, COLORS[value]);
         }
       });
     });
@@ -266,6 +283,16 @@ function rotatePiece(piece) {
   return isValidMove(newPiece) ? newPiece : piece;
 }
 
+// Add this new function for counter-clockwise rotation
+function rotatePieceCounterClockwise(piece) {
+  const newShape = piece.shape[0].map((_, i) =>
+    piece.shape.map(row => row[piece.shape[0].length - 1 - i])
+  );
+  const newPiece = { ...piece, shape: newShape };
+  return isValidMove(newPiece) ? newPiece : piece;
+}
+
+// Update the keydown event listener
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
     togglePause();
@@ -288,7 +315,11 @@ document.addEventListener('keydown', event => {
       dropPiece();
       break;
     case 'ArrowUp':
+    case 'x':
       currentPiece = rotatePiece(currentPiece);
+      break;
+    case 'z':
+      currentPiece = rotatePieceCounterClockwise(currentPiece);
       break;
     case 'Shift':
       holdCurrentPiece();
@@ -335,21 +366,51 @@ quitFromPauseButton.addEventListener('click', () => {
 
 function clearLines() {
   let linesCleared = 0;
-  board = board.filter(row => {
+  let completedRows = [];
+
+  // Find completed rows
+  board.forEach((row, y) => {
     if (row.every(cell => cell !== 0)) {
+      completedRows.push(y);
       linesCleared++;
-      return false; // Remove completed row
     }
-    return true;
   });
 
-  while (board.length < ROWS) {
-    board.unshift(Array(COLS).fill(0)); // Add new empty rows at the top
+  if (linesCleared > 0) {
+    // Animate the blocks dissolving
+    completedRows.forEach(y => {
+      for (let x = 0; x < COLS; x++) {
+        const block = document.createElement('div');
+        block.style.position = 'absolute';
+        block.style.left = `${x * BLOCK_SIZE}px`;
+        block.style.top = `${y * BLOCK_SIZE}px`;
+        block.style.width = `${BLOCK_SIZE}px`;
+        block.style.height = `${BLOCK_SIZE}px`;
+        block.style.backgroundColor = COLORS[board[y][x]];
+        block.classList.add('dissolving');
+        canvas.parentNode.appendChild(block);
+        
+        // Remove the animated block after animation
+        setTimeout(() => {
+          block.remove();
+        }, 300);
+      }
+    });
+
+    // Wait for animation to complete before updating board
+    setTimeout(() => {
+      board = board.filter((row, index) => !completedRows.includes(index));
+      while (board.length < ROWS) {
+        board.unshift(Array(COLS).fill(0));
+      }
+      
+      if (linesCleared === 4) {
+        showQuadMessage();
+      }
+    }, 300);
   }
 
-  if (linesCleared === 4) {
-    showQuadMessage(); // Show QUAD message
-  }
+  return linesCleared;
 }
 
 function showQuadMessage() {

@@ -115,11 +115,18 @@ h3 {
   }
 }
 
+@keyframes flashGameOver {
+  0% { color: #ff0051; }
+  50% { color: #ff6b96; }
+  100% { color: #ff0051; }
+}
+
 .game-over h2 {
   color: #ff0051;
   font-size: 3em;
   margin-bottom: 30px;
   text-shadow: 0 0 10px rgba(255, 0, 81, 0.5);
+  animation: flashGameOver 1s infinite;
 }
 
 .score-display {
@@ -201,4 +208,19 @@ h3 {
 .menu-content button:hover {
   transform: scale(1.1);
   box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+}
+
+@keyframes dissolveBlock {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.dissolving {
+  animation: dissolveBlock 0.3s ease-out forwards;
 }
