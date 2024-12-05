@@ -32,8 +32,6 @@ let dropInterval = 1000; // 1 second per drop
 let lastDropTime = 0;
 let canHold = true;
 let board = JSON.parse(JSON.stringify(BOARD));
-let linesClearedTotal = 0;
-let highScore = localStorage.getItem('highScore') || 0;
 
 // Utility functions
 function drawBlock(ctx, x, y, color) {
@@ -77,13 +75,6 @@ function generatePiece() {
   const id = Math.floor(Math.random() * (TETROMINOS.length - 1)) + 1;
   const shape = TETROMINOS[id];
   return { id, shape, x: 3, y: 0 };
-}
-
-function updateScore(newScore) {
-  if (newScore > highScore) {
-    highScore = newScore;
-    localStorage.setItem('highScore', highScore);
-  }
 }
 
 function drawPiece(ctx, piece, isShadow = false) {
@@ -233,33 +224,29 @@ document.addEventListener('keydown', event => {
 
 function clearLines() {
   let linesCleared = 0;
-
-  for (let y = ROWS - 1; y >= 0; y--) {
-    if (board[y].every(cell => cell !== 0)) {
+  board = board.filter(row => {
+    if (row.every(cell => cell !== 0)) {
       linesCleared++;
-      // Remove the cleared row
-      board.splice(y, 1);
-      // Add a new empty row at the top
-      board.unshift(Array(COLS).fill(0));
-      y++; // Check the new row at this index
+      return false; // Remove completed row
     }
+    return true;
+  });
+
+  while (board.length < ROWS) {
+    board.unshift(Array(COLS).fill(0)); // Add new empty rows at the top
   }
 
   if (linesCleared === 4) {
-    showQuadMessage();
+    showQuadMessage(); // Show QUAD message
   }
 }
 
 function showQuadMessage() {
-  const quadMessage = document.getElementById('quadMessage');
   quadMessage.classList.remove('hidden');
-  quadMessage.classList.add('visible');
   setTimeout(() => {
-    quadMessage.classList.remove('visible');
     quadMessage.classList.add('hidden');
   }, 1000);
 }
-
 
 // Initialization
 function initGame() {
