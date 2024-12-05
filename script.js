@@ -529,6 +529,8 @@ function isTSpin(piece) {
   }
 // Initialization
 function initGame() {
+  console.log("Game initialized");
+  console.log("Initial pause state:", isPaused);
   currentPiece = generatePiece();
   nextPiece = generatePiece();
   board = JSON.parse(JSON.stringify(BOARD));
@@ -538,6 +540,7 @@ function initGame() {
   isPaused = false;
   pauseMenuState = 'main';
   selectedMenuItem = 0;
+  console.log("End of init pause state:", isPaused);
   updateDisplays();
   drawBoard(ctx, board);
   drawHold();
