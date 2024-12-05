@@ -40,7 +40,6 @@ let canHold = true;
 let score = 0;
 let level = 1;
 let backToBack = false;
-let isPaused = false;
 let combo = 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 
@@ -286,9 +285,6 @@ document.addEventListener('keydown', event => {
     case 'ArrowUp':
       currentPiece = rotatePiece(currentPiece);
       break;
-    case 'P':
-      togglePause();
-      break;
     case 'Shift':
       holdCurrentPiece();
       break;
@@ -325,14 +321,6 @@ let particles = [];
 function addParticles(y) {
   for (let i = 0; i < 50; i++) {
     particles.push(new Particle(canvas.width / 2, y * BLOCK_SIZE));
-  }
-}
-
-function togglePause() {
-  isPaused = !isPaused;
-  if (!isPaused) {
-      lastDropTime = performance.now();
-      requestAnimationFrame(update);
   }
 }
 
