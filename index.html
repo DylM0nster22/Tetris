@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tetris</title>
   <link rel="stylesheet" href="styles.css">
@@ -21,6 +22,19 @@
     </div>
   </div>
   <div id="quadMessage" class="hidden">QUAD!</div>
+  <div id="gameOverScreen" class="game-over hidden">
+    <div class="game-over-content">
+      <h2>GAME OVER</h2>
+      <div class="score-display">
+        <p>Final Score: <span id="finalScore">0</span></p>
+        <p>High Score: <span id="highScore">0</span></p>
+      </div>
+      <div class="buttons">
+        <button id="retryButton">Play Again</button>
+        <button id="quitButton">Quit Game</button>
+      </div>
+    </div>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>

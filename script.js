@@ -5,12 +5,27 @@ const nextCtx = nextCanvas.getContext('2d');
 const holdCanvas = document.getElementById('holdCanvas');
 const holdCtx = holdCanvas.getContext('2d');
 const quadMessage = document.getElementById('quadMessage');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const finalScoreElement = document.getElementById('finalScore');
+const highScoreElement = document.getElementById('highScore');
+const retryButton = document.getElementById('retryButton');
+const quitButton = document.getElementById('quitButton');
 
 const COLS = 10;
 const ROWS = 20;
 const BLOCK_SIZE = 30;
 const BOARD = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-const COLORS = ['#000', '#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff', '#fff'];
+const COLORS = [
+  '#000',
+  '#FF0051', // Red
+  '#00FF93', // Green
+  '#0051FF', // Blue
+  '#FFE600', // Yellow
+  '#FF00FF', // Magenta
+  '#00FFFF', // Cyan
+  '#FFFFFF'  // White
+];
+
 
 // Tetromino shapes
 const TETROMINOS = [
@@ -24,21 +39,58 @@ const TETROMINOS = [
   [[0, 0, 7], [7, 7, 7]], // L
 ];
 
+gameOverScreen.style.display = 'none';
+
 // Game state
 let currentPiece = null;
 let nextPiece = null;
 let holdPiece = null;
+let animationId;
 let dropInterval = 1000; // 1 second per drop
 let lastDropTime = 0;
 let canHold = true;
+let score = 0;
+let highScore = localStorage.getItem('tetrisHighScore') || 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 
-// Utility functions
 function drawBlock(ctx, x, y, color) {
+  const blockX = x * BLOCK_SIZE;
+  const blockY = y * BLOCK_SIZE;
+  
+  // Main block face
   ctx.fillStyle = color;
-  ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-  ctx.strokeStyle = '#222';
-  ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+  ctx.fillRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+  
+  // Light edge (top, left)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.beginPath();
+  ctx.moveTo(blockX, blockY + BLOCK_SIZE);
+  ctx.lineTo(blockX, blockY);
+  ctx.lineTo(blockX + BLOCK_SIZE, blockY);
+  ctx.lineTo(blockX + BLOCK_SIZE - 3, blockY + 3);
+  ctx.lineTo(blockX + 3, blockY + 3);
+  ctx.lineTo(blockX + 3, blockY + BLOCK_SIZE - 3);
+  ctx.fill();
+  
+  // Dark edge (bottom, right)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.beginPath();
+  ctx.moveTo(blockX + BLOCK_SIZE, blockY);
+  ctx.lineTo(blockX + BLOCK_SIZE, blockY + BLOCK_SIZE);
+  ctx.lineTo(blockX, blockY + BLOCK_SIZE);
+  ctx.lineTo(blockX + 3, blockY + BLOCK_SIZE - 3);
+  ctx.lineTo(blockX + BLOCK_SIZE - 3, blockY + BLOCK_SIZE - 3);
+  ctx.lineTo(blockX + BLOCK_SIZE - 3, blockY + 3);
+  ctx.fill();
+  
+  // Inner block face
+  ctx.fillStyle = color;
+  ctx.fillRect(
+    blockX + 3,
+    blockY + 3,
+    BLOCK_SIZE - 6,
+    BLOCK_SIZE - 6
+  );
 }
 
 function drawBoard(ctx, board) {
@@ -114,8 +166,8 @@ function dropPiece() {
     nextPiece = generatePiece();
     canHold = true; // Reset hold availability
     if (!isValidMove(currentPiece)) {
-      alert('Game Over');
-      initGame();
+      showGameOver();
+      return;
     }
   }
 }
@@ -135,17 +187,16 @@ function lockPiece() {
 function update(time = 0) {
   const deltaTime = time - lastDropTime;
   if (deltaTime > dropInterval) {
-    dropPiece();
-    lastDropTime = time;
+      dropPiece();
+      lastDropTime = time;
   }
   
   const shadowPiece = getShadowPiece(currentPiece);
-
   drawBoard(ctx, board);
-  drawPiece(ctx, shadowPiece, true); // Draw shadow piece
-  drawPiece(ctx, currentPiece); // Draw current piece
+  drawPiece(ctx, shadowPiece, true);
+  drawPiece(ctx, currentPiece);
   drawNextPiece();
-  requestAnimationFrame(update);
+  animationId = requestAnimationFrame(update);
 }
 
 function drawNextPiece() {
@@ -222,6 +273,35 @@ document.addEventListener('keydown', event => {
   }
 });
 
+function showGameOver() {
+  cancelAnimationFrame(animationId); // Stop the game loop
+  gameOverScreen.style.display = 'flex'; // Show the game over screen
+  finalScoreElement.textContent = score;
+  highScoreElement.textContent = highScore;
+  
+  if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('tetrisHighScore', highScore);
+      highScoreElement.textContent = highScore;
+  }
+}
+
+function hideGameOver() {
+  gameOverScreen.style.display = 'none';
+}
+
+// Add event listeners
+retryButton.addEventListener('click', () => {
+  hideGameOver();
+  initGame();
+});
+
+quitButton.addEventListener('click', () => {
+  window.close();
+  // Fallback if window.close() is blocked
+  document.body.innerHTML = '<h1>Thanks for playing!</h1>';
+});
+
 function clearLines() {
   let linesCleared = 0;
   board = board.filter(row => {
@@ -250,10 +330,17 @@ function showQuadMessage() {
 
 // Initialization
 function initGame() {
+  board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+  score = 0;
   currentPiece = generatePiece();
   nextPiece = generatePiece();
+  holdPiece = null;
+  canHold = true;
+  lastDropTime = 0;  // Reset the drop timer
+  hideGameOver();
   drawBoard(ctx, board);
   drawHold();
+  // Restart the animation frame
+  cancelAnimationFrame(animationId);
+  animationId = requestAnimationFrame(update);
 }
-
-initGame();

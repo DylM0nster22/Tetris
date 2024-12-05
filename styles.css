@@ -4,31 +4,51 @@ body {
   align-items: center;
   height: 100vh;
   margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #000;
+  font-family: 'Press Start 2P', cursive; /* Retro gaming font */
+  background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
   color: #fff;
 }
 
 .game-container {
   display: flex;
   flex-direction: row;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
 canvas {
-  background-color: #222;
-  border: 2px solid #fff;
+  background-color: rgba(20, 20, 20, 0.9);
+  border: 3px solid #333;
+  border-radius: 5px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .info-panel {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  margin-left: 10px;
+  margin-left: 20px;
+  padding: 15px;
+  background: rgba(40, 40, 40, 0.6);
+  border-radius: 10px;
+}
+
+.next-piece, .hold-piece {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  border-radius: 8px;
+  margin: 10px 0;
 }
 
 h3 {
   margin: 5px 0;
   text-align: center;
+  color: #00ff00;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px #00ff00;
 }
 
 #quadMessage {
@@ -36,15 +56,109 @@ h3 {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 2rem;
+  font-size: 3rem;
   font-weight: bold;
-  color: yellow;
-  background: rgba(0, 0, 0, 0.8);
-  padding: 10px 20px;
-  border-radius: 10px;
-  display: none;
+  color: #00ff00;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px 40px;
+  border-radius: 15px;
+  border: 2px solid #00ff00;
+  box-shadow: 0 0 20px #00ff00;
+  text-shadow: 0 0 10px #00ff00;
+  animation: glow 1s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 5px #00ff00;
+  }
+  to {
+    text-shadow: 0 0 20px #00ff00;
+  }
 }
 
 .hidden {
   display: none;
+}
+
+.game-over {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.game-over-content {
+  background: rgba(40, 40, 40, 0.95);
+  padding: 40px;
+  border-radius: 15px;
+  border: 2px solid #00ff00;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+  text-align: center;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.game-over h2 {
+  color: #ff0051;
+  font-size: 3em;
+  margin-bottom: 30px;
+  text-shadow: 0 0 10px rgba(255, 0, 81, 0.5);
+}
+
+.score-display {
+  margin: 20px 0;
+  font-size: 1.2em;
+}
+
+.score-display p {
+  margin: 10px 0;
+}
+
+.buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.buttons button {
+  padding: 15px 30px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#retryButton {
+  background: #00ff00;
+  color: #000;
+}
+
+#quitButton {
+  background: #ff0051;
+  color: #fff;
+}
+
+.buttons button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
 }
