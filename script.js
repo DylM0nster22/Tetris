@@ -15,7 +15,6 @@ const QUEUE_SIZE = 3;
 const BLOCK_SIZE = 30;
 const BOARD = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 const COLORS = ['#000', '#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff', '#fff'];
-const menuItems = ['Resume', 'Statistics', 'Settings', 'Quit'];
 const pieceStats = {
   T: 0, O: 0, S: 0, Z: 0, I: 0, J: 0, L: 0};
 
@@ -41,13 +40,9 @@ let canHold = true;
 let score = 0;
 let level = 1;
 let backToBack = false;
-let selectedMenuItem = 0;
 let isPaused = false;
-let pauseMenuState = 'main'; // 'main', 'settings', 'stats'
-let resumeCountdown = 0;
 let combo = 0;
 let board = JSON.parse(JSON.stringify(BOARD));
-
 
 // Utility functions
 function drawBlock(ctx, x, y, color) {
@@ -208,24 +203,17 @@ function lockPiece() {
 }
 
 function update(time = 0) {
-  console.log("Pause state:", isPaused); // Add this line
-  if (isPaused) {
-      showPauseMenu();
-      requestAnimationFrame(update);
-      return;
-  }
-
   const deltaTime = time - lastDropTime;
   if (deltaTime > dropInterval) {
-      dropPiece();
-      lastDropTime = time;
+    dropPiece();
+    lastDropTime = time;
   }
   
   const shadowPiece = getShadowPiece(currentPiece);
 
   drawBoard(ctx, board);
-  drawPiece(ctx, shadowPiece, true);
-  drawPiece(ctx, currentPiece);
+  drawPiece(ctx, shadowPiece, true); // Draw shadow piece
+  drawPiece(ctx, currentPiece); // Draw current piece
   drawNextPiece();
   requestAnimationFrame(update);
 }
@@ -240,6 +228,9 @@ function drawNextPiece() {
     });
   });
 }
+
+initGame();
+requestAnimationFrame(update);
 
 function holdCurrentPiece() {
   if (!canHold) return;
@@ -295,18 +286,12 @@ document.addEventListener('keydown', event => {
     case 'ArrowUp':
       currentPiece = rotatePiece(currentPiece);
       break;
+    case 'P':
+      togglePause();
+      break;
     case 'Shift':
       holdCurrentPiece();
       break;
-  }
-  if (event.key === 'Escape') {
-    togglePause();
-    return;
-  }
-
-  if (isPaused) {
-    handlePauseMenuInput(event);
-    return;
   }
 });
 
@@ -343,48 +328,11 @@ function addParticles(y) {
   }
 }
 
-function handlePauseMenuInput(event) {
-  if (!isPaused) return;
-
-  if (pauseMenuState === 'main') {
-      switch(event.key) {
-          case 'ArrowUp':
-              // Navigate menu up
-              selectedMenuItem = (selectedMenuItem - 1 + menuItems.length) % menuItems.length;
-              break;
-          case 'ArrowDown':
-              // Navigate menu down
-              selectedMenuItem = (selectedMenuItem + 1) % menuItems.length;
-              break;
-          case 'Enter':
-              switch(selectedMenuItem) {
-                  case 0: // Resume
-                      togglePause();
-                      break;
-                  case 1: // Statistics
-                      pauseMenuState = 'stats';
-                      break;
-                  case 2: // Settings
-                      pauseMenuState = 'settings';
-                      break;
-                  case 3: // Quit
-                      if (confirm('Are you sure you want to quit?')) {
-                          initGame();
-                          isPaused = false;
-                      }
-                      break;
-              }
-              break;
-      }
-  } else if (event.key === 'Backspace') {
-      pauseMenuState = 'main';
-  }
-}
-
 function togglePause() {
   isPaused = !isPaused;
   if (!isPaused) {
-      startResumeCountdown();
+      lastDropTime = performance.now();
+      requestAnimationFrame(update);
   }
 }
 
@@ -422,74 +370,6 @@ function clearLines() {
 
   updateDisplays(); // Add here
   }
-}
-
-function showPauseMenu() {
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  if (pauseMenuState === 'main') {
-      drawMainPauseMenu();
-  } else if (pauseMenuState === 'stats') {
-      drawStatsMenu();
-  } else if (pauseMenuState === 'settings') {
-      drawSettingsMenu();
-  }
-}
-
-function drawStatsMenu() {
-  ctx.fillStyle = 'white';
-  ctx.font = '20px Arial';
-  ctx.textAlign = 'left';
-  
-  const stats = [
-      `Score: ${score}`,
-      `Level: ${level}`,
-      `Combo: ${combo}`,
-      'Piece Statistics:',
-      `T: ${pieceStats.T}`,
-      `I: ${pieceStats.I}`,
-      `O: ${pieceStats.O}`,
-      `S: ${pieceStats.S}`,
-      `Z: ${pieceStats.Z}`,
-      `J: ${pieceStats.J}`,
-      `L: ${pieceStats.L}`
-  ];
-
-  stats.forEach((stat, index) => {
-      ctx.fillText(stat, canvas.width * 0.2, canvas.height * 0.2 + (index * 30));
-  });
-
-  ctx.fillText('Press Backspace to return', canvas.width * 0.2, canvas.height * 0.8);
-}
-
-function startResumeCountdown() {
-  resumeCountdown = 3;
-  const countdownInterval = setInterval(() => {
-      if (resumeCountdown > 0) {
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = 'white';
-          ctx.font = '50px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(resumeCountdown, canvas.width / 2, canvas.height / 2);
-          resumeCountdown--;
-      } else {
-          clearInterval(countdownInterval);
-          isPaused = false;
-          lastDropTime = performance.now();
-          requestAnimationFrame(update);
-      }
-  }, 1000);
-}
-
-function drawMainPauseMenu() {
-  menuItems.forEach((item, index) => {
-      ctx.fillStyle = index === selectedMenuItem ? '#ff0' : 'white';
-      ctx.font = '30px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(item, canvas.width / 2, canvas.height * (0.3 + index * 0.1));
-  });
 }
 
 function isTSpin(piece) {
@@ -530,22 +410,14 @@ function isTSpin(piece) {
   }
 // Initialization
 function initGame() {
-  console.log("Game initialized");
-  console.log("Initial pause state:", isPaused);
   currentPiece = generatePiece();
   nextPiece = generatePiece();
-  board = JSON.parse(JSON.stringify(BOARD));
   score = 0;
   level = 1;
   combo = 0;
-  isPaused = false;
-  pauseMenuState = 'main';
-  selectedMenuItem = 0;
-  console.log("End of init pause state:", isPaused);
-  updateDisplays();
+  updateDisplays(); // Add here
   drawBoard(ctx, board);
   drawHold();
 }
 
 initGame();
-requestAnimationFrame(update);
