@@ -48,6 +48,7 @@ let resumeCountdown = 0;
 let combo = 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 
+
 // Utility functions
 function drawBlock(ctx, x, y, color) {
   ctx.fillStyle = color;
