@@ -239,9 +239,6 @@ function drawNextPiece() {
   });
 }
 
-initGame();
-requestAnimationFrame(update);
-
 function holdCurrentPiece() {
   if (!canHold) return;
   if (holdPiece) {
