@@ -8,12 +8,15 @@ const quadMessage = document.getElementById('quadMessage');
 const scoreDisplay = document.getElementById('score');
 const levelDisplay = document.getElementById('level');
 const comboDisplay = document.getElementById('combo');
-
 const COLS = 10;
 const ROWS = 20;
+const pieceQueue = [];
+const QUEUE_SIZE = 3;
 const BLOCK_SIZE = 30;
 const BOARD = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 const COLORS = ['#000', '#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff', '#fff'];
+const pieceStats = {
+  T: 0, O: 0, S: 0, Z: 0, I: 0, J: 0, L: 0};
 
 // Tetromino shapes
 const TETROMINOS = [
@@ -36,6 +39,8 @@ let lastDropTime = 0;
 let canHold = true;
 let score = 0;
 let level = 1;
+let backToBack = false;
+let isPaused = false;
 let combo = 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 
@@ -72,6 +77,59 @@ function updateDisplays() {
   scoreDisplay.textContent = score;
   levelDisplay.textContent = level;
   comboDisplay.textContent = combo;
+}
+
+function fillQueue() {
+  while (pieceQueue.length < QUEUE_SIZE) {
+      pieceQueue.push(generatePiece());
+  }
+}
+
+function getNextPiece() {
+  const piece = pieceQueue.shift();
+  fillQueue();
+  return piece;
+}
+
+function flashLines(completedLines) {
+  const flashCount = 3;
+  let flashes = 0;
+  
+  const flash = setInterval(() => {
+      completedLines.forEach(y => {
+          for (let x = 0; x < COLS; x++) {
+              const color = flashes % 2 === 0 ? '#FFF' : '#000';
+              drawBlock(ctx, x, y, color);
+          }
+      });
+      
+      flashes++;
+      if (flashes >= flashCount * 2) {
+          clearInterval(flash);
+      }
+  }, 100);
+}
+
+function updateScore(linesCleared, isTSpin) {
+  let points = 0;
+  if (isTSpin) {
+      points = linesCleared * 400;
+      if (backToBack) points *= 1.5;
+      backToBack = true;
+  } else if (linesCleared === 4) {
+      points = 800;
+      if (backToBack) points *= 1.5;
+      backToBack = true;
+  } else {
+      backToBack = false;
+      points = linesCleared * 100;
+  }
+  score += points * level;
+}
+
+function updatePieceStats(piece) {
+  const pieceTypes = ['', 'T', 'O', 'S', 'Z', 'I', 'J', 'L'];
+  pieceStats[pieceTypes[piece.id]]++;
 }
 
 function getShadowPiece(piece) {
@@ -228,6 +286,9 @@ document.addEventListener('keydown', event => {
     case 'ArrowUp':
       currentPiece = rotatePiece(currentPiece);
       break;
+    case 'P':
+      togglePause();
+      break;
     case 'Shift':
       holdCurrentPiece();
       break;
@@ -267,6 +328,14 @@ function addParticles(y) {
   }
 }
 
+function togglePause() {
+  isPaused = !isPaused;
+  if (!isPaused) {
+      lastDropTime = performance.now();
+      requestAnimationFrame(update);
+  }
+}
+
 function clearLines() {
   let linesCleared = 0;
   board = board.filter(row => {
@@ -301,6 +370,21 @@ function clearLines() {
 
   updateDisplays(); // Add here
   }
+}
+
+function isTSpin(piece) {
+  if (piece.id !== 1) return false; // Only T pieces
+  let corners = 0;
+  const x = piece.x;
+  const y = piece.y;
+  
+  // Check corners around T piece
+  if (y + 2 < ROWS && x >= 0 && board[y + 2][x] !== 0) corners++;
+  if (y + 2 < ROWS && x + 2 < COLS && board[y + 2][x + 2] !== 0) corners++;
+  if (y >= 0 && x >= 0 && board[y][x] !== 0) corners++;
+  if (y >= 0 && x + 2 < COLS && board[y][x + 2] !== 0) corners++;
+  
+  return corners >= 3;
 }
 
   function saveHighScore() {
