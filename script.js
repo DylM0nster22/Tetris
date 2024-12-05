@@ -41,6 +41,8 @@ let score = 0;
 let level = 1;
 let backToBack = false;
 let isPaused = false;
+let pauseMenuState = 'main'; // 'main', 'settings', 'stats'
+let resumeCountdown = 0;
 let combo = 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 
@@ -203,17 +205,23 @@ function lockPiece() {
 }
 
 function update(time = 0) {
+  if (isPaused) {
+      showPauseMenu();
+      requestAnimationFrame(update);
+      return;
+  }
+
   const deltaTime = time - lastDropTime;
   if (deltaTime > dropInterval) {
-    dropPiece();
-    lastDropTime = time;
+      dropPiece();
+      lastDropTime = time;
   }
   
   const shadowPiece = getShadowPiece(currentPiece);
 
   drawBoard(ctx, board);
-  drawPiece(ctx, shadowPiece, true); // Draw shadow piece
-  drawPiece(ctx, currentPiece); // Draw current piece
+  drawPiece(ctx, shadowPiece, true);
+  drawPiece(ctx, currentPiece);
   drawNextPiece();
   requestAnimationFrame(update);
 }
@@ -286,12 +294,18 @@ document.addEventListener('keydown', event => {
     case 'ArrowUp':
       currentPiece = rotatePiece(currentPiece);
       break;
-    case 'P':
-      togglePause();
-      break;
     case 'Shift':
       holdCurrentPiece();
       break;
+  }
+  if (event.key === 'Escape') {
+    togglePause();
+    return;
+  }
+
+  if (isPaused) {
+    handlePauseMenuInput(event);
+    return;
   }
 });
 
@@ -328,11 +342,28 @@ function addParticles(y) {
   }
 }
 
-function togglePause() {
-  isPaused = !isPaused;
-  if (!isPaused) {
-      lastDropTime = performance.now();
-      requestAnimationFrame(update);
+function handlePauseMenuInput(event) {
+  if (pauseMenuState === 'main') {
+      switch(event.key) {
+          case 'Enter':
+              if (event.target.textContent === 'Resume') {
+                  togglePause();
+              } else if (event.target.textContent === 'Statistics') {
+                  pauseMenuState = 'stats';
+              } else if (event.target.textContent === 'Settings') {
+                  pauseMenuState = 'settings';
+              } else if (event.target.textContent === 'Quit') {
+                  if (confirm('Are you sure you want to quit?')) {
+                      initGame();
+                      isPaused = false;
+                  }
+              }
+              break;
+      }
+  } else {
+      if (event.key === 'Backspace') {
+          pauseMenuState = 'main';
+      }
   }
 }
 
@@ -370,6 +401,83 @@ function clearLines() {
 
   updateDisplays(); // Add here
   }
+}
+
+function showPauseMenu() {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  if (pauseMenuState === 'main') {
+      drawMainPauseMenu();
+  } else if (pauseMenuState === 'stats') {
+      drawStatsMenu();
+  } else if (pauseMenuState === 'settings') {
+      drawSettingsMenu();
+  }
+}
+
+function drawStatsMenu() {
+  ctx.fillStyle = 'white';
+  ctx.font = '20px Arial';
+  ctx.textAlign = 'left';
+  
+  const stats = [
+      `Score: ${score}`,
+      `Level: ${level}`,
+      `Combo: ${combo}`,
+      'Piece Statistics:',
+      `T: ${pieceStats.T}`,
+      `I: ${pieceStats.I}`,
+      `O: ${pieceStats.O}`,
+      `S: ${pieceStats.S}`,
+      `Z: ${pieceStats.Z}`,
+      `J: ${pieceStats.J}`,
+      `L: ${pieceStats.L}`
+  ];
+
+  stats.forEach((stat, index) => {
+      ctx.fillText(stat, canvas.width * 0.2, canvas.height * 0.2 + (index * 30));
+  });
+
+  ctx.fillText('Press Backspace to return', canvas.width * 0.2, canvas.height * 0.8);
+}
+
+function startResumeCountdown() {
+  resumeCountdown = 3;
+  const countdownInterval = setInterval(() => {
+      if (resumeCountdown > 0) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'white';
+          ctx.font = '50px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(resumeCountdown, canvas.width / 2, canvas.height / 2);
+          resumeCountdown--;
+      } else {
+          clearInterval(countdownInterval);
+          isPaused = false;
+          lastDropTime = performance.now();
+          requestAnimationFrame(update);
+      }
+  }, 1000);
+}
+
+function drawMainPauseMenu() {
+  const buttons = [
+      { text: 'Resume', y: canvas.height * 0.3 },
+      { text: 'Statistics', y: canvas.height * 0.4 },
+      { text: 'Settings', y: canvas.height * 0.5 },
+      { text: 'Quit', y: canvas.height * 0.6 }
+  ];
+
+  ctx.fillStyle = 'white';
+  ctx.font = '30px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('PAUSED', canvas.width / 2, canvas.height * 0.2);
+
+  buttons.forEach(button => {
+      ctx.fillText(button.text, canvas.width / 2, button.y);
+  });
 }
 
 function isTSpin(piece) {
