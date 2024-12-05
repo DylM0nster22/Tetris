@@ -5,18 +5,12 @@ const nextCtx = nextCanvas.getContext('2d');
 const holdCanvas = document.getElementById('holdCanvas');
 const holdCtx = holdCanvas.getContext('2d');
 const quadMessage = document.getElementById('quadMessage');
-const scoreDisplay = document.getElementById('score');
-const levelDisplay = document.getElementById('level');
-const comboDisplay = document.getElementById('combo');
+
 const COLS = 10;
 const ROWS = 20;
-const pieceQueue = [];
-const QUEUE_SIZE = 3;
 const BLOCK_SIZE = 30;
 const BOARD = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 const COLORS = ['#000', '#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff', '#fff'];
-const pieceStats = {
-  T: 0, O: 0, S: 0, Z: 0, I: 0, J: 0, L: 0};
 
 // Tetromino shapes
 const TETROMINOS = [
@@ -37,10 +31,6 @@ let holdPiece = null;
 let dropInterval = 1000; // 1 second per drop
 let lastDropTime = 0;
 let canHold = true;
-let score = 0;
-let level = 1;
-let backToBack = false;
-let combo = 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 
 // Utility functions
@@ -70,65 +60,6 @@ function drawBoard(ctx, board) {
       }
     }
   }
-}
-
-function updateDisplays() {
-  scoreDisplay.textContent = score;
-  levelDisplay.textContent = level;
-  comboDisplay.textContent = combo;
-}
-
-function fillQueue() {
-  while (pieceQueue.length < QUEUE_SIZE) {
-      pieceQueue.push(generatePiece());
-  }
-}
-
-function getNextPiece() {
-  const piece = pieceQueue.shift();
-  fillQueue();
-  return piece;
-}
-
-function flashLines(completedLines) {
-  const flashCount = 3;
-  let flashes = 0;
-  
-  const flash = setInterval(() => {
-      completedLines.forEach(y => {
-          for (let x = 0; x < COLS; x++) {
-              const color = flashes % 2 === 0 ? '#FFF' : '#000';
-              drawBlock(ctx, x, y, color);
-          }
-      });
-      
-      flashes++;
-      if (flashes >= flashCount * 2) {
-          clearInterval(flash);
-      }
-  }, 100);
-}
-
-function updateScore(linesCleared, isTSpin) {
-  let points = 0;
-  if (isTSpin) {
-      points = linesCleared * 400;
-      if (backToBack) points *= 1.5;
-      backToBack = true;
-  } else if (linesCleared === 4) {
-      points = 800;
-      if (backToBack) points *= 1.5;
-      backToBack = true;
-  } else {
-      backToBack = false;
-      points = linesCleared * 100;
-  }
-  score += points * level;
-}
-
-function updatePieceStats(piece) {
-  const pieceTypes = ['', 'T', 'O', 'S', 'Z', 'I', 'J', 'L'];
-  pieceStats[pieceTypes[piece.id]]++;
 }
 
 function getShadowPiece(piece) {
@@ -291,119 +222,36 @@ document.addEventListener('keydown', event => {
   }
 });
 
-class Particle {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.speed = {
-      x: (Math.random() - 0.5) * 5,
-      y: (Math.random() - 4) * 5
-    };
-    this.size = Math.random() * 3 + 1;
-    this.life = 1;
-  }
-
-  update() {
-    this.x += this.speed.x;
-    this.y += this.speed.y;
-    this.life -= 0.01;
-  }
-
-  draw(ctx) {
-    ctx.fillStyle = `rgba(255, 255, 255, ${this.life})`;
-    ctx.fillRect(this.x, this.y, this.size, this.size);
-  }
-}
-
-let particles = [];
-
-// Add to clearLines() when a line is cleared
-function addParticles(y) {
-  for (let i = 0; i < 50; i++) {
-    particles.push(new Particle(canvas.width / 2, y * BLOCK_SIZE));
-  }
-}
-
 function clearLines() {
   let linesCleared = 0;
   board = board.filter(row => {
     if (row.every(cell => cell !== 0)) {
       linesCleared++;
-      return false;
+      return false; // Remove completed row
     }
     return true;
   });
 
-  // Add scoring based on lines cleared
-  switch(linesCleared) {
-    case 1: score += 100 * level; break;
-    case 2: score += 300 * level; break;
-    case 3: score += 500 * level; break;
-    case 4: score += 800 * level; break;
-  }
-
-  if (linesCleared > 0) {
-    combo++;
-    score += combo * 50; // Bonus points for combos
-  } else {
-    combo = 0;
-  }
-
-  // Level up every 10 lines
-  level = Math.floor(score / 1000) + 1;
-  dropInterval = Math.max(100, 1000 - (level * 50)); // Speed up as level increases
-
   while (board.length < ROWS) {
-    board.unshift(Array(COLS).fill(0));
+    board.unshift(Array(COLS).fill(0)); // Add new empty rows at the top
+  }
 
-  updateDisplays(); // Add here
+  if (linesCleared === 4) {
+    showQuadMessage(); // Show QUAD message
   }
 }
 
-function isTSpin(piece) {
-  if (piece.id !== 1) return false; // Only T pieces
-  let corners = 0;
-  const x = piece.x;
-  const y = piece.y;
-  
-  // Check corners around T piece
-  if (y + 2 < ROWS && x >= 0 && board[y + 2][x] !== 0) corners++;
-  if (y + 2 < ROWS && x + 2 < COLS && board[y + 2][x + 2] !== 0) corners++;
-  if (y >= 0 && x >= 0 && board[y][x] !== 0) corners++;
-  if (y >= 0 && x + 2 < COLS && board[y][x + 2] !== 0) corners++;
-  
-  return corners >= 3;
+function showQuadMessage() {
+  quadMessage.classList.remove('hidden');
+  setTimeout(() => {
+    quadMessage.classList.add('hidden');
+  }, 1000);
 }
 
-  function saveHighScore() {
-    const highScores = JSON.parse(localStorage.getItem('tetrisHighScores') || '[]');
-    highScores.push(score);
-    highScores.sort((a, b) => b - a);
-    highScores.splice(5); // Keep top 5 scores
-    localStorage.setItem('tetrisHighScores', JSON.stringify(highScores));
-  }
-
-  // Add to game over condition
-  if (!isValidMove(currentPiece)) {
-    saveHighScore();
-    alert(`Game Over!\nScore: ${score}\nLevel: ${level}`);
-    initGame();
-  }
-
-  function showQuadMessage() {
-    quadMessage.classList.remove('hidden');
-    setTimeout(() => {
-      quadMessage.classList.add('hidden');
-    }, 1000);
-  }
 // Initialization
 function initGame() {
   currentPiece = generatePiece();
   nextPiece = generatePiece();
-  score = 0;
-  level = 1;
-  combo = 0;
-  updateDisplays(); // Add here
   drawBoard(ctx, board);
   drawHold();
 }
