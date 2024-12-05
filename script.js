@@ -10,6 +10,9 @@ const finalScoreElement = document.getElementById('finalScore');
 const highScoreElement = document.getElementById('highScore');
 const retryButton = document.getElementById('retryButton');
 const quitButton = document.getElementById('quitButton');
+const pauseScreen = document.getElementById('pauseScreen');
+const resumeButton = document.getElementById('resumeButton');
+const quitFromPauseButton = document.getElementById('quitFromPauseButton');
 
 const COLS = 10;
 const ROWS = 20;
@@ -50,6 +53,7 @@ let dropInterval = 1000; // 1 second per drop
 let lastDropTime = 0;
 let canHold = true;
 let score = 0;
+let isPaused = false;
 let highScore = localStorage.getItem('tetrisHighScore') || 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 
@@ -111,6 +115,18 @@ function drawBoard(ctx, board) {
         drawBlock(ctx, x, y, COLORS[board[y][x]]);
       }
     }
+  }
+}
+
+function togglePause() {
+  isPaused = !isPaused;
+  if (isPaused) {
+      cancelAnimationFrame(animationId);
+      pauseScreen.style.display = 'flex';
+  } else {
+      pauseScreen.style.display = 'none';
+      lastDropTime = performance.now();
+      animationId = requestAnimationFrame(update);
   }
 }
 
@@ -185,6 +201,7 @@ function lockPiece() {
 }
 
 function update(time = 0) {
+  if (isPaused) return;
   const deltaTime = time - lastDropTime;
   if (deltaTime > dropInterval) {
       dropPiece();
@@ -250,6 +267,12 @@ function rotatePiece(piece) {
 }
 
 document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    togglePause();
+    return;
+  }
+  if (isPaused) return;
+
   switch (event.key) {
     case 'ArrowLeft':
       if (isValidMove(currentPiece, -1)) currentPiece.x--;
@@ -300,6 +323,14 @@ quitButton.addEventListener('click', () => {
   window.close();
   // Fallback if window.close() is blocked
   document.body.innerHTML = '<h1>Thanks for playing!</h1>';
+});
+
+resumeButton.addEventListener('click', togglePause);
+
+quitFromPauseButton.addEventListener('click', () => {
+    window.close();
+    // Fallback if window.close() is blocked
+    document.body.innerHTML = '<h1>Thanks for playing!</h1>';
 });
 
 function clearLines() {
