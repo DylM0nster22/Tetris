@@ -1,55 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Modern Tetris</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tetris</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="game-container">
-        <div class="side-panel left-panel">
-            <div id="stats">
-                <p>Score: <span id="score">0</span></p>
-                <p>Level: <span id="level">1</span></p>
-                <p>Combo: <span id="combo">0</span></p>
-            </div>
-            <div class="piece-container">
-                <h3>Hold</h3>
-                <canvas id="holdCanvas" width="120" height="120"></canvas>
-            </div>
-            <div class="stats-container">
-                <h3>Statistics</h3>
-                <div id="pieceStats">
-                    <div class="stat-row">T: <span id="tCount">0</span></div>
-                    <div class="stat-row">I: <span id="iCount">0</span></div>
-                    <div class="stat-row">O: <span id="oCount">0</span></div>
-                    <div class="stat-row">L: <span id="lCount">0</span></div>
-                    <div class="stat-row">J: <span id="jCount">0</span></div>
-                    <div class="stat-row">S: <span id="sCount">0</span></div>
-                    <div class="stat-row">Z: <span id="zCount">0</span></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="game-board">
-            <canvas id="gameCanvas" width="300" height="600"></canvas>
-        </div>
-        
-        <div class="side-panel right-panel">
-            <div class="next-pieces">
-                <h3>Next Pieces</h3>
-                <canvas id="nextCanvas" width="120" height="360"></canvas>
-            </div>
-            <div id="controls">
-                <h3>Controls</h3>
-                <p>← → : Move</p>
-                <p>↑ : Rotate</p>
-                <p>↓ : Soft Drop</p>
-                <p>Space : Hard Drop</p>
-                <p>Shift : Hold</p>
-            </div>
-        </div>
+  <div class="game-container">
+    <canvas id="gameCanvas" width="300" height="600"></canvas>
+    <div class="info-panel">
+      <div class="next-piece">
+        <h3>Next</h3>
+        <canvas id="nextCanvas" width="100" height="100"></canvas>
+      </div>
+      <div class="hold-piece">
+        <h3>Hold</h3>
+        <canvas id="holdCanvas" width="100" height="100"></canvas>
+      </div>
     </div>
-    <div id="quadMessage" class="hidden">TETRIS!</div>
+  </div>
+  <div id="quadMessage" class="hidden">QUAD!</div>
+  <script src="script.js"></script>
 </body>
 </html>
