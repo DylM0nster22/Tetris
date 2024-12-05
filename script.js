@@ -539,3 +539,4 @@ function initGame() {
 }
 
 initGame();
+requestAnimationFrame(update);
