@@ -5,6 +5,9 @@ const nextCtx = nextCanvas.getContext('2d');
 const holdCanvas = document.getElementById('holdCanvas');
 const holdCtx = holdCanvas.getContext('2d');
 const quadMessage = document.getElementById('quadMessage');
+const scoreDisplay = document.getElementById('score');
+const levelDisplay = document.getElementById('level');
+const comboDisplay = document.getElementById('combo');
 
 const COLS = 10;
 const ROWS = 20;
@@ -33,6 +36,7 @@ let lastDropTime = 0;
 let canHold = true;
 let score = 0;
 let level = 1;
+let combo = 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 
 // Utility functions
@@ -62,6 +66,12 @@ function drawBoard(ctx, board) {
       }
     }
   }
+}
+
+function updateDisplays() {
+  scoreDisplay.textContent = score;
+  levelDisplay.textContent = level;
+  comboDisplay.textContent = combo;
 }
 
 function getShadowPiece(piece) {
@@ -224,70 +234,6 @@ document.addEventListener('keydown', event => {
   }
 });
 
-function clearLines() {
-  let linesCleared = 0;
-  board = board.filter(row => {
-    if (row.every(cell => cell !== 0)) {
-      linesCleared++;
-      return false;
-    }
-    return true;
-  });
-
-  // Add scoring based on lines cleared
-  switch(linesCleared) {
-    case 1: score += 100 * level; break;
-    case 2: score += 300 * level; break;
-    case 3: score += 500 * level; break;
-    case 4: score += 800 * level; break;
-  }
-
-  if (linesCleared > 0) {
-    combo++;
-    score += combo * 50; // Bonus points for combos
-  } else {
-    combo = 0;
-  }
-
-  // Level up every 10 lines
-  level = Math.floor(score / 1000) + 1;
-  dropInterval = Math.max(100, 1000 - (level * 50)); // Speed up as level increases
-
-  while (board.length < ROWS) {
-    board.unshift(Array(COLS).fill(0));
-  }
-}
-  function saveHighScore() {
-    const highScores = JSON.parse(localStorage.getItem('tetrisHighScores') || '[]');
-    highScores.push(score);
-    highScores.sort((a, b) => b - a);
-    highScores.splice(5); // Keep top 5 scores
-    localStorage.setItem('tetrisHighScores', JSON.stringify(highScores));
-  }
-
-  // Add to game over condition
-  if (!isValidMove(currentPiece)) {
-    saveHighScore();
-    alert(`Game Over!\nScore: ${score}\nLevel: ${level}`);
-    initGame();
-  }
-
-  function showQuadMessage() {
-    quadMessage.classList.remove('hidden');
-    setTimeout(() => {
-      quadMessage.classList.add('hidden');
-    }, 1000);
-  }
-// Initialization
-function initGame() {
-  currentPiece = generatePiece();
-  nextPiece = generatePiece();
-  drawBoard(ctx, board);
-  drawHold();
-}
-
-initGame();
-
 class Particle {
   constructor(x, y) {
     this.x = x;
@@ -320,3 +266,74 @@ function addParticles(y) {
     particles.push(new Particle(canvas.width / 2, y * BLOCK_SIZE));
   }
 }
+
+function clearLines() {
+  let linesCleared = 0;
+  board = board.filter(row => {
+    if (row.every(cell => cell !== 0)) {
+      linesCleared++;
+      return false;
+    }
+    return true;
+  });
+
+  // Add scoring based on lines cleared
+  switch(linesCleared) {
+    case 1: score += 100 * level; break;
+    case 2: score += 300 * level; break;
+    case 3: score += 500 * level; break;
+    case 4: score += 800 * level; break;
+  }
+
+  if (linesCleared > 0) {
+    combo++;
+    score += combo * 50; // Bonus points for combos
+  } else {
+    combo = 0;
+  }
+
+  // Level up every 10 lines
+  level = Math.floor(score / 1000) + 1;
+  dropInterval = Math.max(100, 1000 - (level * 50)); // Speed up as level increases
+
+  while (board.length < ROWS) {
+    board.unshift(Array(COLS).fill(0));
+
+  updateDisplays(); // Add here
+  }
+}
+
+  function saveHighScore() {
+    const highScores = JSON.parse(localStorage.getItem('tetrisHighScores') || '[]');
+    highScores.push(score);
+    highScores.sort((a, b) => b - a);
+    highScores.splice(5); // Keep top 5 scores
+    localStorage.setItem('tetrisHighScores', JSON.stringify(highScores));
+  }
+
+  // Add to game over condition
+  if (!isValidMove(currentPiece)) {
+    saveHighScore();
+    alert(`Game Over!\nScore: ${score}\nLevel: ${level}`);
+    initGame();
+  }
+
+  function showQuadMessage() {
+    quadMessage.classList.remove('hidden');
+    setTimeout(() => {
+      quadMessage.classList.add('hidden');
+    }, 1000);
+  }
+// Initialization
+function initGame() {
+  currentPiece = generatePiece();
+  nextPiece = generatePiece();
+  score = 0;
+  level = 1;
+  combo = 0;
+  updateDisplays(); // Add here
+  drawBoard(ctx, board);
+  drawHold();
+}
+
+initGame();
