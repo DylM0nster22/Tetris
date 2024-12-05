@@ -207,6 +207,7 @@ function lockPiece() {
 }
 
 function update(time = 0) {
+  console.log("Pause state:", isPaused); // Add this line
   if (isPaused) {
       showPauseMenu();
       requestAnimationFrame(update);
@@ -376,6 +377,13 @@ function handlePauseMenuInput(event) {
       }
   } else if (event.key === 'Backspace') {
       pauseMenuState = 'main';
+  }
+}
+
+function togglePause() {
+  isPaused = !isPaused;
+  if (!isPaused) {
+      startResumeCountdown();
   }
 }
 
