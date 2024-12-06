@@ -13,6 +13,8 @@ const quitButton = document.getElementById('quitButton');
 const pauseScreen = document.getElementById('pauseScreen');
 const resumeButton = document.getElementById('resumeButton');
 const quitFromPauseButton = document.getElementById('quitFromPauseButton');
+const SWIPE_THRESHOLD = 50; // Minimum swipe distance
+const TAP_THRESHOLD = 10; // Maximum distance for a tap
 
 const COLS = 10;
 const ROWS = 20;
@@ -56,6 +58,11 @@ let score = 0;
 let isPaused = false;
 let highScore = localStorage.getItem('tetrisHighScore') || 0;
 let board = JSON.parse(JSON.stringify(BOARD));
+let gameStarted = false;
+
+let touchStartX = null;
+let touchStartY = null;
+let touchStartTime = null;
 
 function drawBlock(ctx, x, y, color) {
   const blockX = x * BLOCK_SIZE;
@@ -95,6 +102,67 @@ function drawBlock(ctx, x, y, color) {
     BLOCK_SIZE - 6,
     BLOCK_SIZE - 6
   );
+}
+
+// ... existing code ...
+
+// Add these touch event listeners after your keyboard event listeners
+canvas.addEventListener('touchstart', handleTouchStart);
+canvas.addEventListener('touchmove', handleTouchMove);
+canvas.addEventListener('touchend', handleTouchEnd);
+
+function handleTouchStart(event) {
+    event.preventDefault();
+    const touch = event.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchStartTime = Date.now();
+}
+
+function handleTouchMove(event) {
+    event.preventDefault();
+}
+
+function handleTouchEnd(event) {
+    event.preventDefault();
+    if (!touchStartX || !touchStartY || isPaused) return;
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    const deltaTime = Date.now() - touchStartTime;
+
+    // Check if it's a tap (quick touch with minimal movement)
+    if (deltaTime < 200 && Math.abs(deltaX) < TAP_THRESHOLD && Math.abs(deltaY) < TAP_THRESHOLD) {
+        currentPiece = rotatePiece(currentPiece);
+        return;
+    }
+
+    // Handle swipes
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD || Math.abs(deltaY) > SWIPE_THRESHOLD) {
+        // Determine if horizontal or vertical swipe
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            // Horizontal swipe
+            if (deltaX > 0) {
+                // Swipe right
+                if (isValidMove(currentPiece, 1)) currentPiece.x++;
+            } else {
+                // Swipe left
+                if (isValidMove(currentPiece, -1)) currentPiece.x--;
+            }
+        } else {
+            // Vertical swipe
+            if (deltaY > 0) {
+                // Swipe down - hard drop
+                while (isValidMove(currentPiece, 0, 1)) currentPiece.y++;
+                dropPiece();
+            }
+        }
+    }
+
+    touchStartX = null;
+    touchStartY = null;
+    touchStartTime = null;
 }
 
 function drawBoard(ctx, board) {
@@ -201,7 +269,7 @@ function lockPiece() {
 }
 
 function update(time = 0) {
-  if (isPaused) return;
+  if (!gameStarted || isPaused) return;
   const deltaTime = time - lastDropTime;
   if (deltaTime > dropInterval) {
       dropPiece();
@@ -294,6 +362,11 @@ function rotatePieceCounterClockwise(piece) {
 
 // Update the keydown event listener
 document.addEventListener('keydown', event => {
+  // Prevent default behavior for game control keys
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)) {
+    event.preventDefault();
+  }
+
   if (event.key === 'Escape') {
     togglePause();
     return;
@@ -330,14 +403,18 @@ document.addEventListener('keydown', event => {
 function showGameOver() {
   cancelAnimationFrame(animationId); // Stop the game loop
   gameOverScreen.style.display = 'flex'; // Show the game over screen
-  finalScoreElement.textContent = score;
-  highScoreElement.textContent = highScore;
   
+  // Update final score
+  finalScoreElement.textContent = score;
+  
+  // Check and update high score
   if (score > highScore) {
-      highScore = score;
-      localStorage.setItem('tetrisHighScore', highScore);
-      highScoreElement.textContent = highScore;
+    highScore = score;
+    localStorage.setItem('tetrisHighScore', highScore);
   }
+  
+  // Update high score display
+  highScoreElement.textContent = highScore;
 }
 
 function hideGameOver() {
@@ -348,6 +425,7 @@ function hideGameOver() {
 retryButton.addEventListener('click', () => {
   hideGameOver();
   initGame();
+  startCountdown(); // Start the countdown again
 });
 
 quitButton.addEventListener('click', () => {
@@ -357,8 +435,11 @@ quitButton.addEventListener('click', () => {
 });
 
 resumeButton.addEventListener('click', togglePause);
+window.addEventListener('orientationchange', handleOrientationChange);
+window.addEventListener('resize', handleResize);
 
-quitFromPauseButton.addEventListener('click', () => {
+
+quitFromPauseButton.addEventListener('click', () => {S
     window.close();
     // Fallback if window.close() is blocked
     document.body.innerHTML = '<h1>Thanks for playing!</h1>';
@@ -377,19 +458,51 @@ function clearLines() {
   });
 
   if (linesCleared > 0) {
+    // Calculate score based on number of lines cleared
+    // Using classic NES scoring system
+    switch (linesCleared) {
+      case 1:
+        score += 100;
+        break;
+      case 2:
+        score += 300;
+        break;
+      case 3:
+        score += 500;
+        break;
+      case 4:
+        score += 800;
+        break;
+    }
+
+    // Update high score if necessary
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('tetrisHighScore', highScore);
+    }
+
     // Animate the blocks dissolving
     completedRows.forEach(y => {
       for (let x = 0; x < COLS; x++) {
         const block = document.createElement('div');
+        // Position relative to the game canvas
+        const canvasRect = canvas.getBoundingClientRect();
         block.style.position = 'absolute';
-        block.style.left = `${x * BLOCK_SIZE}px`;
-        block.style.top = `${y * BLOCK_SIZE}px`;
+        block.style.left = `${canvasRect.left + x * BLOCK_SIZE}px`;
+        block.style.top = `${canvasRect.top + y * BLOCK_SIZE}px`;
         block.style.width = `${BLOCK_SIZE}px`;
         block.style.height = `${BLOCK_SIZE}px`;
         block.style.backgroundColor = COLORS[board[y][x]];
-        block.classList.add('dissolving');
-        canvas.parentNode.appendChild(block);
+        block.style.transition = 'all 0.3s';
+        block.style.opacity = '1';
+        document.body.appendChild(block);
         
+        // Fade out animation
+        setTimeout(() => {
+          block.style.opacity = '0';
+          block.style.transform = 'scale(1.2)';
+        }, 50);
+
         // Remove the animated block after animation
         setTimeout(() => {
           block.remove();
@@ -413,6 +526,33 @@ function clearLines() {
   return linesCleared;
 }
 
+function handleOrientationChange() {
+  // Adjust canvas size based on new orientation
+  setTimeout(adjustCanvasSize, 100); // Small delay to ensure new dimensions are available
+}
+
+function handleResize() {
+  adjustCanvasSize();
+}
+
+function adjustCanvasSize() {
+  const container = document.querySelector('.game-container');
+  const containerWidth = container.clientWidth;
+  
+  if (window.innerWidth <= 768) {
+      // Mobile view
+      const maxWidth = Math.min(350, containerWidth - 20); // 20px for padding
+      const scale = maxWidth / 300; // 300 is original canvas width
+      
+      canvas.style.width = `${maxWidth}px`;
+      canvas.style.height = `${600 * scale}px`; // Maintain aspect ratio
+  } else {
+      // Desktop view - reset to original size
+      canvas.style.width = '300px';
+      canvas.style.height = '600px';
+  }
+}
+
 function showQuadMessage() {
   quadMessage.classList.remove('hidden');
   setTimeout(() => {
@@ -424,15 +564,51 @@ function showQuadMessage() {
 function initGame() {
   board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
   score = 0;
+  // Convert stored high score to number, default to 0 if null/undefined
+  highScore = Number(localStorage.getItem('tetrisHighScore')) || 0;
   currentPiece = generatePiece();
   nextPiece = generatePiece();
   holdPiece = null;
   canHold = true;
-  lastDropTime = 0;  // Reset the drop timer
+  lastDropTime = 0;
+  gameStarted = false;
   hideGameOver();
   drawBoard(ctx, board);
   drawHold();
-  // Restart the animation frame
-  cancelAnimationFrame(animationId);
-  animationId = requestAnimationFrame(update);
 }
+
+function startCountdown() {
+    const countdown = document.getElementById('countdown');
+    let count = 3;
+    
+    document.getElementById('mainMenu').style.display = 'none';
+    countdown.classList.remove('hidden');
+    countdown.textContent = count; // Start with 3
+
+    const countInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdown.textContent = count;
+            countdown.style.animation = 'none';
+            void countdown.offsetWidth; // Trigger reflow
+            countdown.style.animation = 'countdownScale 1s ease-in-out';
+        } else if (count === 0) {
+            countdown.textContent = 'GO!';
+        } else {
+            clearInterval(countInterval);
+            countdown.classList.add('hidden');
+            gameStarted = true;
+            lastDropTime = performance.now();
+            requestAnimationFrame(update);
+        }
+    }, 1000);
+}
+
+document.getElementById('playButton').addEventListener('click', startCountdown);
+document.getElementById('quitFromMenuButton').addEventListener('click', () => {
+    window.close();
+    document.body.innerHTML = '<h1>Thanks for playing!</h1>';
+});
+
+// Initialize the game but don't start it
+initGame();
