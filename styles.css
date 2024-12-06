@@ -203,11 +203,14 @@ h3 {
 #resumeButton {
   background: #00ff00;
   color: #000;
+  font-family: 'Press Start 2P', cursive;
 }
 
 #quitFromPauseButton {
   background: #ff0051;
   color: #fff;
+  font-family: 'Press Start 2P', cursive;
+
 }
 
 .menu-content button:hover {
@@ -331,4 +334,137 @@ canvas#gameCanvas {
   .touch-controls-hint {
     display: block;
   }
+}
+
+.combo-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2em;
+  color: #00ff00;
+  text-shadow: 0 0 10px #00ff00;
+  animation: comboPopup 1s ease-out;
+}
+
+@keyframes comboPopup {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.challenge-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 15px;
+  border-radius: 10px;
+  border: 2px solid #00ff00;
+  animation: slideIn 0.5s ease-out;
+}
+
+/* Weather effects */
+.wind-effect {
+  animation: windShake 2s infinite;
+}
+
+.storm-effect {
+  animation: stormFlash 0.5s infinite;
+}
+
+.fog-effect {
+  filter: blur(2px);
+  opacity: 0.8;
+}
+
+@keyframes windShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes stormFlash {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+}
+
+.challenge-complete {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px 40px;
+  border-radius: 15px;
+  border: 2px solid #ffd700;
+  color: #ffd700;
+  font-size: 2em;
+  text-align: center;
+  animation: slideInOut 2s ease-in-out;
+  z-index: 1000;
+}
+
+@keyframes slideInOut {
+  0% { transform: translate(-50%, -100%); opacity: 0; }
+  20% { transform: translate(-50%, -50%); opacity: 1; }
+  80% { transform: translate(-50%, -50%); opacity: 1; }
+  100% { transform: translate(-50%, 100%); opacity: 0; }
+}
+
+.laser-beam {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background: linear-gradient(90deg, transparent, #ff0000, transparent);
+  animation: laser 0.5s linear;
+}
+
+@keyframes laser {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.weather-notification {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 15px;
+  border-radius: 10px;
+  border: 2px solid #00ffff;
+  color: #00ffff;
+  animation: slideIn 0.5s ease-out;
+  z-index: 1000;
+}
+
+.reward-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  border-radius: 15px;
+  border: 2px solid #ffd700;
+  color: #ffd700;
+  text-align: center;
+  animation: popIn 0.5s ease-out;
+  z-index: 1000;
+}
+
+.weather-notification,
+.reward-notification {
+  font-family: 'Press Start 2P', cursive;
+}
+
+.reward-notification h3 {
+  margin-bottom: 15px;
+}
+
+@keyframes popIn {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
 }
