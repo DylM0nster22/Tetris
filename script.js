@@ -19,6 +19,7 @@ const TAP_THRESHOLD = 10; // Maximum distance for a tap
 const COLS = 10;
 const ROWS = 20;
 const BLOCK_SIZE = 30;
+const MAX_UNDO_STATES = 10; // Limit number of stored states
 const BOARD = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 const COLORS = [
   '#000',
@@ -69,7 +70,7 @@ let isPaused = false;
 let highScore = localStorage.getItem('tetrisHighScore') || 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 let gameStarted = false;
-
+let previousStates = [];
 let touchStartX = null;
 let touchStartY = null;
 let touchStartTime = null;
@@ -153,6 +154,21 @@ function startRandomChallenge() {
 
 // Call periodically
 setInterval(startRandomChallenge, 60000); // New challenge every minute
+
+function saveGameState() {
+  const gameState = {
+    board: JSON.parse(JSON.stringify(board)),
+    score: score,
+    currentPiece: JSON.parse(JSON.stringify(currentPiece)),
+    nextPiece: JSON.parse(JSON.stringify(nextPiece)),
+    holdPiece: holdPiece ? JSON.parse(JSON.stringify(holdPiece)) : null
+  };
+  
+  previousStates.push(gameState);
+  if (previousStates.length > MAX_UNDO_STATES) {
+    previousStates.shift(); // Remove oldest state
+  }
+}
 
 function drawBlock(ctx, x, y, color, blockType = 0) {
   const blockX = x * BLOCK_SIZE;
@@ -486,6 +502,9 @@ function dropPiece() {
 }
 
 function lockPiece() {
+  // Save state before locking piece
+  saveGameState();
+  
   currentPiece.shape.forEach((row, dy) => {
     row.forEach((value, dx) => {
       if (value !== 0) {
@@ -493,7 +512,6 @@ function lockPiece() {
         const y = currentPiece.y + dy;
         if (y >= 0) {
           board[y][x] = value;
-          // Check if it's a power-up block
           if (value >= 8) {
             activatePowerUp(value, x, y);
           }
@@ -601,6 +619,11 @@ document.addEventListener('keydown', event => {
   // Prevent default behavior for game control keys
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)) {
     event.preventDefault();
+  }
+
+  if (event.ctrlKey && event.key === 'z') {
+    event.preventDefault();
+    undoMove();
   }
 
   if (event.key === 'Escape') {
@@ -964,6 +987,22 @@ function activateTemporarySlowdown() {
   }, 15000); // 15 seconds of slow time
 }
 
+function undoMove() {
+  if (previousStates.length === 0 || isPaused) return;
+  
+  const previousState = previousStates.pop();
+  board = previousState.board;
+  score = previousState.score;
+  currentPiece = previousState.currentPiece;
+  nextPiece = previousState.nextPiece;
+  holdPiece = previousState.holdPiece;
+  
+  // Redraw everything
+  drawBoard(ctx, board);
+  drawNextPiece();
+  drawHold();
+}
+
 function showChallengeNotification() {
   const notification = document.createElement('div');
   notification.className = 'challenge-notification';
@@ -1078,17 +1117,6 @@ function startWeatherEffect() {
   }
 }
 
-// Add this new code after the initGame function:
-function startWeatherSystem() {
-  // Check for weather every 2-5 minutes
-  setInterval(() => {
-    if (!currentWeather && Math.random() < 0.3) { //
-      startWeatherEffect();
-    }
-  }, Math.random() * (300000 - 120000) + 120000); //
-}
-
-
 // Change weather every 30 seconds
 
 function showComboMessage(combo) {
@@ -1160,3 +1188,12 @@ function initGame() {
 
 // Initialize the game but don't start it
 initGame();
+
+function startWeatherSystem() {
+  // Check for weather every 2-5 minutes
+  setInterval(() => {
+    if (!currentWeather && Math.random() < 0.3) { //
+      startWeatherEffect();
+    }
+  }, Math.random() * (300000 - 120000) + 120000); //
+}
