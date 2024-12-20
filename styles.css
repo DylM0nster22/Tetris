@@ -469,3 +469,138 @@ canvas#gameCanvas {
   50% { transform: translate(-50%, -50%) scale(1.2); }
   100% { transform: translate(-50%, -50%) scale(1); }
 }
+
+.menu-sections {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.menu-section {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #00ff00;
+}
+
+.menu-section h2 {
+    color: #00ff00;
+    font-size: 1.2em;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.mode-buttons,
+.theme-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.mode-buttons button,
+.theme-buttons button {
+    background: #333;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    padding: 10px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-buttons button:hover,
+.theme-buttons button:hover {
+    background: #00ff00;
+    color: #000;
+}
+
+.mode-buttons button.selected,
+.theme-buttons button.selected {
+    background: #00ff00;
+    color: #000;
+}
+
+.achievements-list,
+.stats-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.achievement-item,
+.stat-item {
+    background: rgba(0, 0, 0, 0.5);
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.8em;
+}
+
+.achievement-item.earned {
+    border: 1px solid #00ff00;
+}
+
+.achievement-item .reward {
+    color: #ffd700;
+}
+
+/* Shop styles */
+.shop-menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid #00ff00;
+    z-index: 2000;
+}
+
+.shop-items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.shop-item {
+    background: rgba(40, 40, 40, 0.8);
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.shop-item button {
+    background: #00ff00;
+    color: #000;
+    border: none;
+    padding: 10px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.shop-item button:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+    .menu-sections {
+        grid-template-columns: 1fr;
+    }
+
+    .shop-items {
+        grid-template-columns: 1fr;
+    }
+
+    .mode-buttons,
+    .theme-buttons {
+        grid-template-columns: 1fr;
+    }
+}
