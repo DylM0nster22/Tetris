@@ -11,8 +11,49 @@
   <div id="mainMenu" class="main-menu">
     <div class="menu-content">
       <h1>TETRIS</h1>
-      <div class="buttons">
+      <div class="menu-sections">
+        <!-- Game Modes Section -->
+        <div class="menu-section" id="gameModes">
+          <h2>Game Modes</h2>
+          <div class="mode-buttons">
+            <button data-mode="CLASSIC">Classic</button>
+            <button data-mode="SPRINT">Sprint</button>
+            <button data-mode="ULTRA">Ultra</button>
+            <button data-mode="SURVIVAL">Survival</button>
+          </div>
+        </div>
+
+        <!-- Themes Section -->
+        <div class="menu-section" id="themeSelector">
+          <h2>Themes</h2>
+          <div class="theme-buttons">
+            <button data-theme="CLASSIC">Classic</button>
+            <button data-theme="NEON">Neon</button>
+            <button data-theme="RETRO">Retro</button>
+            <button data-theme="MINIMAL">Minimal</button>
+          </div>
+        </div>
+
+        <!-- Achievements Section -->
+        <div class="menu-section" id="achievements">
+          <h2>Achievements</h2>
+          <div class="achievements-list">
+            <!-- Achievements will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="menu-section" id="stats">
+          <h2>Statistics</h2>
+          <div class="stats-list">
+            <!-- Stats will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <div class="main-buttons">
         <button id="playButton">Play Game</button>
+        <button id="shopButton">Shop</button>
         <button id="quitFromMenuButton">Quit</button>
       </div>
     </div>
