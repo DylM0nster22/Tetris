@@ -74,6 +74,9 @@ let previousStates = [];
 let touchStartX = null;
 let touchStartY = null;
 let touchStartTime = null;
+let powerUpsDisabled = false;
+let weatherDisabled = false;
+
 
 let comboCount = 0;
 let lastClearTime = 0;
@@ -139,6 +142,50 @@ const WEATHER_EFFECTS = {
 
 let currentWeather = null;
 
+// Add near the top with other constants
+const SHOP_ITEMS = {
+    SLOW_TIME: { cost: 1000, description: "Slow down time for 30 seconds" },
+    BLOCK_SWAP: { cost: 800, description: "Swap current piece with any other" },
+    LINE_CLEAR: { cost: 1500, description: "Clear bottom 3 rows" },
+    SAFETY_NET: { cost: 2000, description: "Prevent game over once" }
+};
+
+// Add near the top with other constants
+const ACHIEVEMENTS = {
+    SPEED_DEMON: { description: "Drop 10 pieces in under 10 seconds", reward: 500, earned: false },
+    PERFECTIONIST: { description: "Clear 5 lines without gaps", reward: 1000, earned: false },
+    SURVIVOR: { description: "Reach level 10", reward: 2000, earned: false }
+};
+
+// Add near the top with other constants
+const GAME_MODES = {
+    CLASSIC: { description: "Traditional Tetris gameplay" },
+    SPRINT: { description: "Clear 40 lines as fast as possible" },
+    ULTRA: { description: "Score as many points in 3 minutes" },
+    SURVIVAL: { description: "Pieces fall faster with each line cleared" }
+};
+
+// Add near the top with other game state variables
+const STATS = {
+    totalPiecesPlaced: 0,
+    totalLinesCleared: 0,
+    longestGame: 0,
+    highestCombo: 0,
+    powerUpsUsed: 0,
+    challengesCompleted: 0
+};
+
+// Add near the top with other constants
+const THEMES = {
+    CLASSIC: { background: '#000', blockStyle: 'solid' },
+    NEON: { background: '#111', blockStyle: 'glowing' },
+    RETRO: { background: '#232', blockStyle: 'pixelated' },
+    MINIMAL: { background: '#fff', blockStyle: 'outlined' }
+};
+
+// Add this to your game state variables near the top
+let isInMainMenu = true;
+
 function startRandomChallenge() {
   if (currentChallenge) return;
   
@@ -171,6 +218,23 @@ function saveGameState() {
 }
 
 function drawBlock(ctx, x, y, color, blockType = 0) {
+  const currentTheme = THEMES[localStorage.getItem('currentTheme') || 'CLASSIC'];
+  
+  switch(currentTheme.blockStyle) {
+    case 'glowing':
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = color;
+      break;
+    case 'pixelated':
+      ctx.imageSmoothingEnabled = false;
+      break;
+    case 'outlined':
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+      return;
+  }
+  
   const blockX = x * BLOCK_SIZE;
   const blockY = y * BLOCK_SIZE;
   
@@ -519,23 +583,27 @@ function lockPiece() {
       }
     });
   });
+  STATS.totalPiecesPlaced++;
+  saveStats();
 }
 
 function update(time = 0) {
-  if (!gameStarted || isPaused) return;
-  
-  const deltaTime = time - lastDropTime;
-  if (deltaTime > dropInterval) {
-      dropPiece();
-      lastDropTime = time;
-  }
-  
-  const shadowPiece = getShadowPiece(currentPiece);
-  drawBoard(ctx, board);
-  drawPiece(ctx, shadowPiece, true);
-  drawPiece(ctx, currentPiece);
-  drawNextPiece();
-  animationId = requestAnimationFrame(update);
+    if (!gameStarted || isPaused || isInMainMenu) return;
+    
+    const deltaTime = time - lastDropTime;
+    if (deltaTime > dropInterval) {
+        dropPiece();
+        lastDropTime = time;
+    }
+    
+    const shadowPiece = getShadowPiece(currentPiece);
+    drawBoard(ctx, board);
+    drawPiece(ctx, shadowPiece, true);
+    drawPiece(ctx, currentPiece);
+    drawNextPiece();
+    animationId = requestAnimationFrame(update);
+    
+    checkAchievements();
 }
 
 function drawNextPiece() {
@@ -616,16 +684,25 @@ function rotatePieceCounterClockwise(piece) {
 
 // Update the keydown event listener
 document.addEventListener('keydown', event => {
-  // Prevent default behavior for game control keys
+  if (event.key.toLowerCase() === 'p') {
+    powerUpsDisabled = true;
+    weatherDisabled = true;
+    console.log('Power-ups and weather have been disabled permanently.');
+  }
+
+  // Prevent further processing for the P key
+  if (powerUpsDisabled && event.key.toLowerCase() === 'p') return;
+
+  // Existing key handling logic
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)) {
     event.preventDefault();
   }
 
+  // Other controls
   if (event.ctrlKey && event.key === 'z') {
     event.preventDefault();
     undoMove();
   }
-
   if (event.key === 'Escape') {
     togglePause();
     return;
@@ -656,24 +733,99 @@ document.addEventListener('keydown', event => {
     case 'Shift':
       holdCurrentPiece();
       break;
+    case 'b': // 'b' for buy/shop
+      openShop();
+      break;
   }
 });
 
+// Add these event listeners after your existing ones
+
+// Theme selection
+document.querySelectorAll('#themeSelector button').forEach(button => {
+  button.addEventListener('click', () => {
+      const theme = button.dataset.theme;
+      localStorage.setItem('currentTheme', theme);
+      
+      // Update selected button styling
+      document.querySelectorAll('#themeSelector button').forEach(b => 
+          b.classList.remove('selected'));
+      button.classList.add('selected');
+  });
+});
+
+// Game mode selection
+document.querySelectorAll('#gameModes button').forEach(button => {
+  button.addEventListener('click', () => {
+      const mode = button.dataset.mode;
+      localStorage.setItem('gameMode', mode);
+      
+      // Update selected button styling
+      document.querySelectorAll('#gameModes button').forEach(b => 
+          b.classList.remove('selected'));
+      button.classList.add('selected');
+  });
+});
+
+// Shop button
+document.getElementById('shopButton').addEventListener('click', openShop);
+
+// Initialize achievements display
+function initializeAchievements() {
+  const achievementsContainer = document.querySelector('.achievements-list');
+  achievementsContainer.innerHTML = Object.entries(ACHIEVEMENTS)
+      .map(([id, achievement]) => `
+          <div class="achievement-item ${achievement.earned ? 'earned' : ''}">
+              <div>${achievement.description}</div>
+              <div class="reward">Reward: ${achievement.reward} points</div>
+          </div>
+      `).join('');
+}
+
+// Initialize stats display
+function initializeStats() {
+  const statsContainer = document.querySelector('.stats-list');
+  if (!statsContainer) return; // Guard clause in case element doesn't exist
+  
+  statsContainer.innerHTML = Object.entries(STATS)
+      .map(([key, value]) => `
+          <div class="stat-item">
+              <div>${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}</div>
+          </div>
+      `).join('');
+}
+
+// Call these when the game loads
+window.addEventListener('load', () => {
+  initializeAchievements();
+  initializeStats();
+  
+  // Set initial theme and mode selections
+  const currentTheme = localStorage.getItem('currentTheme') || 'CLASSIC';
+  const currentMode = localStorage.getItem('gameMode') || 'CLASSIC';
+  
+  document.querySelector(`#themeSelector button[data-theme="${currentTheme}"]`)
+      ?.classList.add('selected');
+  document.querySelector(`#gameModes button[data-mode="${currentMode}"]`)
+      ?.classList.add('selected');
+});
+
 function showGameOver() {
-  cancelAnimationFrame(animationId); // Stop the game loop
-  gameOverScreen.style.display = 'flex'; // Show the game over screen
-  
-  // Update final score
-  finalScoreElement.textContent = score;
-  
-  // Check and update high score
-  if (score > highScore) {
-    highScore = score;
-    localStorage.setItem('tetrisHighScore', highScore);
-  }
-  
-  // Update high score display
-  highScoreElement.textContent = highScore;
+    cancelAnimationFrame(animationId); // Stop the game loop
+    gameOverScreen.style.display = 'flex'; // Show the game over screen
+    isInMainMenu = false; // Ensure main menu state is correct
+    
+    // Update final score
+    finalScoreElement.textContent = score;
+    
+    // Check and update high score
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('tetrisHighScore', highScore);
+    }
+    
+    // Update high score display
+    highScoreElement.textContent = highScore;
 }
 
 function hideGameOver() {
@@ -698,7 +850,7 @@ window.addEventListener('orientationchange', handleOrientationChange);
 window.addEventListener('resize', handleResize);
 
 
-quitFromPauseButton.addEventListener('click', () => {S
+quitFromPauseButton.addEventListener('click', () =>{
     window.close();
     // Fallback if window.close() is blocked
     document.body.innerHTML = '<h1>Thanks for playing!</h1>';
@@ -720,6 +872,11 @@ function clearLines() {
   });
 
   if (linesCleared > 0) {
+    STATS.totalLinesCleared += linesCleared;
+    if (comboCount > STATS.highestCombo) {
+        STATS.highestCombo = comboCount;
+    }
+    saveStats();
     if (timeSinceLastClear < 2000) { // 2 seconds window for combos
       comboCount++;
       score += comboCount * 50; // Bonus points for combos
@@ -794,12 +951,31 @@ function clearLines() {
     }, 300);
   }
 
+  STATS.totalLinesCleared += linesCleared;
+  if (comboCount > STATS.highestCombo) {
+    STATS.highestCombo = comboCount;
+  }
+  saveStats();
+
   return linesCleared;
 }
 
 function handleOrientationChange() {
   // Adjust canvas size based on new orientation
   setTimeout(adjustCanvasSize, 100); // Small delay to ensure new dimensions are available
+}
+
+function saveStats() {
+  // Save stats to localStorage
+  localStorage.setItem('tetrisStats', JSON.stringify(STATS));
+}
+
+// Add this function to load stats when the game starts
+function loadStats() {
+  const savedStats = localStorage.getItem('tetrisStats');
+  if (savedStats) {
+      Object.assign(STATS, JSON.parse(savedStats));
+  }
 }
 
 function handleResize() {
@@ -862,6 +1038,8 @@ function showQuadMessage() {
 }
 
 function activatePowerUp(type, x, y) {
+  if (powerUpsDisabled) return;
+
   switch(type) {
     case POWER_UPS.BOMB:
       // Clear surrounding blocks
@@ -913,6 +1091,31 @@ function activatePowerUp(type, x, y) {
       }
     break;
   }
+}
+
+function openShop() {
+  if (isPaused) return;
+  togglePause();
+  
+  const shopMenu = document.createElement('div');
+  shopMenu.className = 'shop-menu';
+  shopMenu.innerHTML = `
+      <h2>Power-Up Shop</h2>
+      <div class="shop-items">
+          ${Object.entries(SHOP_ITEMS).map(([id, item]) => `
+              <div class="shop-item">
+                  <h3>${id}</h3>
+                  <p>${item.description}</p>
+                  <button onclick="purchaseItem('${id}')" 
+                          ${score < item.cost ? 'disabled' : ''}>
+                      Buy (${item.cost} points)
+                  </button>
+              </div>
+          `).join('')}
+      </div>
+      <button onclick="closeShop()">Close</button>
+  `;
+  document.body.appendChild(shopMenu);
 }
 
 function completeChallenge() {
@@ -1084,6 +1287,8 @@ function showChallengeComplete(challenge) {
 }
 
 function startWeatherEffect() {
+  if (weatherDisabled) return;
+  
   const effects = Object.keys(WEATHER_EFFECTS);
   const newWeather = effects[Math.floor(Math.random() * effects.length)];
   
@@ -1137,7 +1342,10 @@ function startCountdown() {
       cancelAnimationFrame(animationId);
   }
   
+  // Hide main menu and set state
   document.getElementById('mainMenu').style.display = 'none';
+  isInMainMenu = false;
+  
   countdown.classList.remove('hidden');
   countdown.textContent = count;
 
@@ -1155,7 +1363,7 @@ function startCountdown() {
           countdown.classList.add('hidden');
           gameStarted = true;
           lastDropTime = performance.now();
-          animationId = requestAnimationFrame(update);  // Start game loop here
+          animationId = requestAnimationFrame(update);
       }
   }, 1000);
 }
@@ -1166,7 +1374,15 @@ document.getElementById('quitFromMenuButton').addEventListener('click', () => {
     document.body.innerHTML = '<h1>Thanks for playing!</h1>';
 });
 
-function initGame() {
+function initGame(mode = 'CLASSIC') {
+  isInMainMenu = true;  // Set initial state
+  gameStarted = false;  // Ensure game isn't running
+  
+  // Cancel any existing animation frame
+  if (animationId) {
+      cancelAnimationFrame(animationId);
+  }
+  
   board = JSON.parse(JSON.stringify(BOARD));
   score = 0;
   highScore = Number(localStorage.getItem('tetrisHighScore')) || 0;
@@ -1177,13 +1393,26 @@ function initGame() {
   canHold = true;
   lastDropTime = performance.now();
   dropInterval = 1000;
-  gameStarted = true;
   hideGameOver();
   drawBoard(ctx, board);
   drawHold();
+  loadStats();
+  initializeStats();
   
   // Start weather system
   startWeatherSystem();
+  
+  switch(mode) {
+    case 'SPRINT':
+      initSprintMode();
+      break;
+    case 'ULTRA':
+      initUltraMode();
+      break;
+    case 'SURVIVAL':
+      initSurvivalMode();
+      break;
+  }
 }
 
 // Initialize the game but don't start it
@@ -1196,4 +1425,30 @@ function startWeatherSystem() {
       startWeatherEffect();
     }
   }, Math.random() * (300000 - 120000) + 120000); //
+}
+
+function checkAchievements() {
+  // Example achievement check
+  if (!ACHIEVEMENTS.SURVIVOR.earned && score >= 10000) {
+    unlockAchievement('SURVIVOR');
+  }
+}
+
+// Add mode-specific initialization functions
+function initSprintMode() {
+  const lineGoal = 40;
+  let linesCleared = 0;
+  const startTime = Date.now();
+  
+  // Override clearLines() to check for win condition
+  const originalClearLines = clearLines;
+  clearLines = function() {
+    const lines = originalClearLines();
+    linesCleared += lines;
+    if (linesCleared >= lineGoal) {
+      const endTime = Date.now();
+      showSprintComplete(endTime - startTime);
+    }
+    return lines;
+  };
 }
