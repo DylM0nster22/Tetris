@@ -248,6 +248,123 @@ const THEME_COSTS = {
 let tempPoints = 0;
 let megaPoints = parseInt(localStorage.getItem('megaPoints')) || 0;
 
+// Mega Points Shop items and costs
+const MEGA_SHOP_ITEMS = {
+  NEON: { cost: 1000, description: "Neon Theme" },
+  RETRO: { cost: 2000, description: "Retro Theme" },
+  MINIMAL: { cost: 3000, description: "Minimal Theme" },
+};
+
+// Update Mega Points display
+function updateMegaPointsDisplay() {
+  document.getElementById('megaPointsDisplay').textContent = megaPoints;
+}
+
+// Populate Mega Points Shop
+function populateMegaShop() {
+  const shopContainer = document.querySelector('.mega-shop-items');
+  shopContainer.innerHTML = Object.entries(MEGA_SHOP_ITEMS)
+    .map(([id, item]) => `
+      <div class="shop-item">
+        <h3>${item.description}</h3>
+        <p>Cost: ${item.cost} MP</p>
+        <button onclick="buyMegaShopItem('${id}')" ${megaPoints < item.cost ? 'disabled' : ''}>
+          Buy
+        </button>
+      </div>
+    `).join('');
+}
+
+// Handle Mega Points Shop purchase
+function buyMegaShopItem(id) {
+  const item = MEGA_SHOP_ITEMS[id];
+  if (megaPoints >= item.cost) {
+    megaPoints -= item.cost;
+    localStorage.setItem('megaPoints', megaPoints);
+    localStorage.setItem(`themePurchased_${id}`, 'true'); // Mark theme as purchased
+    updateMegaPointsDisplay();
+    populateMegaShop();
+    alert(`Purchased: ${item.description}`);
+  } else {
+    alert('Not enough Mega Points!');
+  }
+}
+
+// Normal Points Shop items and costs
+const NORMAL_SHOP_ITEMS = {
+  SLOW_TIME: { cost: 100, description: "Slow down time for 10 seconds" },
+  CLEAR_ROWS: { cost: 200, description: "Clear 2 random rows" },
+};
+
+// Update Normal Points display
+function updateTempPointsDisplay() {
+  document.getElementById('tempPointsDisplay').textContent = tempPoints;
+}
+
+// Populate Normal Points Shop
+function populateNormalShop() {
+  const shopContainer = document.getElementById('normalShop');
+  shopContainer.innerHTML = Object.entries(NORMAL_SHOP_ITEMS)
+    .map(([id, item]) => `
+      <div class="shop-item">
+        <h3>${item.description}</h3>
+        <p>Cost: ${item.cost} Points</p>
+        <button onclick="buyNormalShopItem('${id}')" ${tempPoints < item.cost ? 'disabled' : ''}>
+          Buy
+        </button>
+      </div>
+    `).join('');
+}
+
+// Handle Normal Points Shop purchase
+function buyNormalShopItem(id) {
+  const item = NORMAL_SHOP_ITEMS[id];
+  if (tempPoints >= item.cost) {
+    tempPoints -= item.cost;
+    updateTempPointsDisplay();
+    populateNormalShop();
+    alert(`Purchased: ${item.description}`);
+    applyNormalShopEffect(id); // Apply the purchased effect
+  } else {
+    alert('Not enough points!');
+  }
+}
+
+// Apply effects for normal shop items
+function applyNormalShopEffect(id) {
+  switch (id) {
+    case 'SLOW_TIME':
+      dropInterval *= 2;
+      setTimeout(() => dropInterval /= 2, 10000); // Revert after 10 seconds
+      break;
+    case 'CLEAR_ROWS':
+      clearRandomRows(2);
+      break;
+    default:
+      console.warn('Unknown shop item:', id);
+  }
+}
+
+// Initialize game
+function initGame() {
+  tempPoints = 0;
+  updateTempPointsDisplay();
+  // Other game initialization logic...
+}
+
+// Call these functions when the main menu loads
+document.addEventListener('DOMContentLoaded', () => {
+  megaPoints = parseInt(localStorage.getItem('megaPoints')) || 0;
+  updateMegaPointsDisplay();
+  populateMegaShop();
+});
+
+// Call these functions when the pause menu loads
+document.addEventListener('DOMContentLoaded', () => {
+  updateTempPointsDisplay();
+  populateNormalShop();
+});
+
 function startRandomChallenge() {
   if (currentChallenge) return;
   
@@ -663,6 +780,7 @@ function update(time = 0) {
     drawPiece(ctx, shadowPiece, true);
     drawPiece(ctx, currentPiece);
     drawNextPiece();
+    updateScoreDisplay();
     animationId = requestAnimationFrame(update);
     
     checkAchievements();
@@ -805,14 +923,29 @@ document.addEventListener('keydown', event => {
 
 // Theme selection
 document.querySelectorAll('#themeSelector button').forEach(button => {
-  button.addEventListener('click', () => {
-      const theme = button.dataset.theme;
-      localStorage.setItem('currentTheme', theme);
-      
-      // Update selected button styling
-      document.querySelectorAll('#themeSelector button').forEach(b => 
-          b.classList.remove('selected'));
+  const theme = button.getAttribute('data-theme');
+  const cost = THEME_COSTS[theme];
+
+  // Remove cost display from button
+  button.textContent = theme.charAt(0) + theme.slice(1).toLowerCase();
+
+  // Update button state based on purchase status
+  function updateButtonState() {
+    const purchased = localStorage.getItem(`themePurchased_${theme}`) === 'true';
+    button.disabled = !purchased;
+    if (localStorage.getItem('currentTheme') === theme) {
       button.classList.add('selected');
+    }
+  }
+
+  updateButtonState();
+
+  button.addEventListener('click', () => {
+    if (localStorage.getItem(`themePurchased_${theme}`) === 'true') {
+      localStorage.setItem('currentTheme', theme);
+      document.querySelectorAll('#themeSelector button').forEach(b => b.classList.remove('selected'));
+      button.classList.add('selected');
+    }
   });
 });
 
@@ -919,6 +1052,7 @@ quitFromPauseButton.addEventListener('click', () =>{
 });
 
 function clearLines() {
+  console.log("Clearing lines...");
   const currentTime = Date.now();
   const timeSinceLastClear = currentTime - lastClearTime;
   
@@ -942,6 +1076,7 @@ function clearLines() {
     if (timeSinceLastClear < 2000) { // 2 seconds window for combos
       comboCount++;
       score += comboCount * 50; // Bonus points for combos
+      updateScoreDisplay(); // Update score display
       showComboMessage(comboCount);
     } else {
       comboCount = 0;
@@ -1298,6 +1433,7 @@ function applyReward(reward) {
       break;
     case 'extraPoints':
       score += reward.value;
+      updateScoreDisplay(); // Update score display
       message = `Bonus ${reward.value} Points!`;
       break;
   }
@@ -1529,16 +1665,33 @@ document.querySelectorAll('#gameModes button').forEach(button => {
 
 // Update theme selection to check for mega points
 document.querySelectorAll('#themeSelector button').forEach(button => {
-    const cost = parseInt(button.getAttribute('data-cost'));
-    if (cost > megaPoints) {
-        button.disabled = true;
+    const theme = button.getAttribute('data-theme');
+    const cost = THEME_COSTS[theme];
+    
+    // Update button state based on affordability
+    function updateButtonState() {
+        button.disabled = cost > megaPoints;
+        if (localStorage.getItem('currentTheme') === theme) {
+            button.classList.add('selected');
+        }
     }
+    
+    updateButtonState();
     
     button.addEventListener('click', () => {
         if (cost <= megaPoints) {
-            megaPoints -= cost;
-            localStorage.setItem('megaPoints', megaPoints);
-            localStorage.setItem('currentTheme', button.getAttribute('data-theme'));
+            if (theme !== 'CLASSIC') { // Classic is free
+                megaPoints -= cost;
+                localStorage.setItem('megaPoints', megaPoints);
+            }
+            localStorage.setItem('currentTheme', theme);
+            
+            // Update all button states
+            document.querySelectorAll('#themeSelector button').forEach(b => {
+                b.classList.remove('selected');
+                updateButtonState();
+            });
+            button.classList.add('selected');
             updateMegaPointsDisplay();
         }
     });
@@ -1546,8 +1699,10 @@ document.querySelectorAll('#themeSelector button').forEach(button => {
 
 // Add this function to update the score display during gameplay
 function updateScoreDisplay() {
-    document.getElementById('currentScore').textContent = score;
-    document.getElementById('tempPoints').textContent = tempPoints;
+    const scoreElement = document.getElementById('currentScore');
+    if (scoreElement) {
+        scoreElement.textContent = score;
+    }
 }
 
 // Modify your existing game mode initialization functions
