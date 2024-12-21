@@ -186,6 +186,68 @@ const THEMES = {
 // Add this to your game state variables near the top
 let isInMainMenu = true;
 
+// Define mega achievements (these persist between games)
+const MEGA_ACHIEVEMENTS = {
+    MASTER_CLEARER: { 
+        description: "Clear 1000 lines total", 
+        reward: 500,
+        requirement: 1000,
+        check: (stats) => stats.totalLinesCleared >= 1000,
+        earned: false
+    },
+    COMBO_KING: { 
+        description: "Get a 10x combo", 
+        reward: 1000,
+        requirement: 10,
+        check: (stats) => stats.highestCombo >= 10,
+        earned: false
+    },
+    MARATHON_RUNNER: { 
+        description: "Play for 3 hours total", 
+        reward: 1500,
+        requirement: 10800000, // 3 hours in milliseconds
+        check: (stats) => stats.totalPlayTime >= 10800000,
+        earned: false
+    },
+    PERFECTIONIST: { 
+        description: "Score 100,000 points in one game", 
+        reward: 2000,
+        requirement: 100000,
+        check: (stats) => stats.highestScore >= 100000,
+        earned: false
+    }
+};
+
+// Define run achievements (these reset each game)
+const RUN_ACHIEVEMENTS = {
+    QUICK_START: { 
+        description: "Clear 3 lines in first 30 seconds", 
+        points: 100, 
+        earned: false 
+    },
+    PERFECT_DROP: { 
+        description: "Perform 3 perfect drops in a row", 
+        points: 150, 
+        earned: false 
+    },
+    COMBO_MASTER: { 
+        description: "Get a 4x combo", 
+        points: 200, 
+        earned: false 
+    }
+};
+
+const THEME_COSTS = {
+    CLASSIC: 0,
+    NEON: 1000,
+    RETRO: 2000,
+    MINIMAL: 3000
+};
+
+// Add these variables to your game state
+let tempPoints = 0;
+let megaPoints = parseInt(localStorage.getItem('megaPoints')) || 0;
+
 function startRandomChallenge() {
   if (currentChallenge) return;
   
@@ -1452,3 +1514,273 @@ function initSprintMode() {
     return lines;
   };
 }
+
+// Add hover effect for game modes
+document.querySelectorAll('#gameModes button').forEach(button => {
+    button.addEventListener('mouseover', () => {
+        document.getElementById('modeDescription').textContent = 
+            button.getAttribute('data-description');
+    });
+    
+    button.addEventListener('mouseout', () => {
+        document.getElementById('modeDescription').textContent = '';
+    });
+});
+
+// Update theme selection to check for mega points
+document.querySelectorAll('#themeSelector button').forEach(button => {
+    const cost = parseInt(button.getAttribute('data-cost'));
+    if (cost > megaPoints) {
+        button.disabled = true;
+    }
+    
+    button.addEventListener('click', () => {
+        if (cost <= megaPoints) {
+            megaPoints -= cost;
+            localStorage.setItem('megaPoints', megaPoints);
+            localStorage.setItem('currentTheme', button.getAttribute('data-theme'));
+            updateMegaPointsDisplay();
+        }
+    });
+});
+
+// Add this function to update the score display during gameplay
+function updateScoreDisplay() {
+    document.getElementById('currentScore').textContent = score;
+    document.getElementById('tempPoints').textContent = tempPoints;
+}
+
+// Modify your existing game mode initialization functions
+function initUltraMode() {
+    const gameTime = 180000; // 3 minutes
+    const startTime = Date.now();
+    
+    const ultraTimer = setInterval(() => {
+        const timeLeft = gameTime - (Date.now() - startTime);
+        if (timeLeft <= 0) {
+            clearInterval(ultraTimer);
+            showUltraComplete(score);
+        }
+    }, 1000);
+}
+
+function initSurvivalMode() {
+    let level = 1;
+    dropInterval = 1000;
+    
+    clearLines = function() {
+        const lines = originalClearLines();
+        if (lines > 0) {
+            level++;
+            dropInterval = Math.max(100, 1000 - (level * 50));
+        }
+        return lines;
+    };
+}
+
+// Initialize game modes
+document.querySelectorAll('#gameModes button').forEach(button => {
+    button.addEventListener('mouseover', () => {
+        document.getElementById('modeDescription').textContent = 
+            button.getAttribute('data-description');
+    });
+    
+    button.addEventListener('mouseout', () => {
+        document.getElementById('modeDescription').textContent = '';
+    });
+    
+    button.addEventListener('click', () => {
+        const mode = button.getAttribute('data-mode');
+        localStorage.setItem('gameMode', mode);
+        
+        // Update selected button styling
+        document.querySelectorAll('#gameModes button').forEach(b => 
+            b.classList.remove('selected'));
+        button.classList.add('selected');
+    });
+});
+
+// Theme selection with mega points check
+document.querySelectorAll('#themeSelector button').forEach(button => {
+    const theme = button.getAttribute('data-theme');
+    const cost = THEME_COSTS[theme];
+    
+    // Update button state based on affordability
+    function updateButtonState() {
+        button.disabled = cost > megaPoints;
+        if (localStorage.getItem('currentTheme') === theme) {
+            button.classList.add('selected');
+        }
+    }
+    
+    updateButtonState();
+    
+    button.addEventListener('click', () => {
+        if (cost <= megaPoints) {
+            if (theme !== 'CLASSIC') { // Classic is free
+                megaPoints -= cost;
+                localStorage.setItem('megaPoints', megaPoints);
+            }
+            localStorage.setItem('currentTheme', theme);
+            
+            // Update all button states
+            document.querySelectorAll('#themeSelector button').forEach(b => {
+                b.classList.remove('selected');
+                updateButtonState();
+            });
+            button.classList.add('selected');
+            updateMegaPointsDisplay();
+        }
+    });
+});
+
+function initializeMegaAchievements() {
+    const container = document.querySelector('.mega-achievements-list');
+    if (!container) return;
+
+    // Load earned status from localStorage
+    Object.keys(MEGA_ACHIEVEMENTS).forEach(id => {
+        MEGA_ACHIEVEMENTS[id].earned = localStorage.getItem(`mega_achievement_${id}`) === 'true';
+    });
+
+    container.innerHTML = Object.entries(MEGA_ACHIEVEMENTS)
+        .map(([id, achievement]) => `
+            <div class="mega-achievement-item ${achievement.earned ? 'earned' : ''}">
+                <div>${achievement.description}</div>
+                <div class="reward">Reward: ${achievement.reward} MP</div>
+            </div>
+        `).join('');
+}
+
+function checkMegaAchievements() {
+    Object.entries(MEGA_ACHIEVEMENTS).forEach(([id, achievement]) => {
+        if (!achievement.earned && achievement.check(STATS)) {
+            // Award mega points
+            megaPoints += achievement.reward;
+            localStorage.setItem('megaPoints', megaPoints);
+            localStorage.setItem(`mega_achievement_${id}`, 'true');
+            achievement.earned = true;
+            
+            showMegaAchievementUnlocked(achievement);
+            updateMegaPointsDisplay();
+            initializeMegaAchievements();
+        }
+    });
+}
+
+function showMegaAchievementUnlocked(achievement) {
+    const notification = document.createElement('div');
+    notification.className = 'mega-achievement-notification';
+    notification.innerHTML = `
+        <h3>Mega Achievement Unlocked!</h3>
+        <p>${achievement.description}</p>
+        <p class="reward">+${achievement.reward} MP</p>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.remove(), 3000);
+}
+
+function updateMegaPointsDisplay() {
+    const display = document.getElementById('megaPoints');
+    if (display) {
+        display.textContent = megaPoints;
+    }
+}
+
+function updateScoreDisplay() {
+    document.getElementById('currentScore').textContent = score;
+    document.getElementById('tempPoints').textContent = tempPoints;
+}
+
+function initGameMode(mode) {
+    switch(mode) {
+        case 'SPRINT':
+            return initSprintMode();
+        case 'ULTRA':
+            return initUltraMode();
+        case 'SURVIVAL':
+            return initSurvivalMode();
+        default:
+            return initClassicMode();
+    }
+}
+
+function initSprintMode() {
+    const lineGoal = 40;
+    let linesCleared = 0;
+    const startTime = Date.now();
+    
+    const originalClearLines = clearLines;
+    clearLines = function() {
+        const lines = originalClearLines();
+        linesCleared += lines;
+        if (linesCleared >= lineGoal) {
+            const endTime = Date.now();
+            showSprintComplete(endTime - startTime);
+        }
+        return lines;
+    };
+}
+
+function initUltraMode() {
+    const gameTime = 180000; // 3 minutes
+    const startTime = Date.now();
+    
+    const ultraTimer = setInterval(() => {
+        const timeLeft = gameTime - (Date.now() - startTime);
+        if (timeLeft <= 0) {
+            clearInterval(ultraTimer);
+            showUltraComplete(score);
+        }
+    }, 1000);
+}
+
+function initSurvivalMode() {
+    let level = 1;
+    dropInterval = 1000;
+    
+    const originalClearLines = clearLines;
+    clearLines = function() {
+        const lines = originalClearLines();
+        if (lines > 0) {
+            level++;
+            dropInterval = Math.max(100, 1000 - (level * 50));
+        }
+        return lines;
+    };
+}
+
+function initClassicMode() {
+    // Reset to default game settings
+    dropInterval = 1000;
+    score = 0;
+    level = 1;
+}
+
+// Initialize everything when the game loads
+window.addEventListener('load', () => {
+    initializeMegaAchievements();
+    updateMegaPointsDisplay();
+    
+    // Set initial theme and mode selections
+    const currentTheme = localStorage.getItem('currentTheme') || 'CLASSIC';
+    const currentMode = localStorage.getItem('gameMode') || 'CLASSIC';
+    
+    document.querySelector(`#themeSelector button[data-theme="${currentTheme}"]`)
+        ?.classList.add('selected');
+    document.querySelector(`#gameModes button[data-mode="${currentMode}"]`)
+        ?.classList.add('selected');
+
+    // Add event listener for play button here
+    const playButton = document.getElementById('playButton');
+    if (playButton) {
+        playButton.addEventListener('click', () => {
+            const selectedMode = localStorage.getItem('gameMode') || 'CLASSIC';
+            initGameMode(selectedMode);
+            startCountdown();
+        });
+    }
+});
+
+initGame();

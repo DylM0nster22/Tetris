@@ -16,45 +16,38 @@
         <div class="menu-section" id="gameModes">
           <h2>Game Modes</h2>
           <div class="mode-buttons">
-            <button data-mode="CLASSIC">Classic</button>
-            <button data-mode="SPRINT">Sprint</button>
-            <button data-mode="ULTRA">Ultra</button>
-            <button data-mode="SURVIVAL">Survival</button>
+            <button data-mode="CLASSIC" data-description="Traditional Tetris gameplay">Classic</button>
+            <button data-mode="SPRINT" data-description="Clear 40 lines as fast as possible">Sprint</button>
+            <button data-mode="ULTRA" data-description="Score as many points in 3 minutes">Ultra</button>
+            <button data-mode="SURVIVAL" data-description="Pieces fall faster with each line cleared">Survival</button>
           </div>
+          <div id="modeDescription" class="mode-description"></div>
+        </div>
+
+        <!-- Mega Achievements Section -->
+        <div class="menu-section" id="megaAchievements">
+          <h2>Mega Achievements</h2>
+          <div class="mega-achievements-list">
+            <!-- Will be populated by JavaScript -->
+          </div>
+          <div class="mega-points">Mega Points: <span id="megaPoints">0</span></div>
         </div>
 
         <!-- Themes Section -->
         <div class="menu-section" id="themeSelector">
           <h2>Themes</h2>
           <div class="theme-buttons">
-            <button data-theme="CLASSIC">Classic</button>
-            <button data-theme="NEON">Neon</button>
-            <button data-theme="RETRO">Retro</button>
-            <button data-theme="MINIMAL">Minimal</button>
-          </div>
-        </div>
-
-        <!-- Achievements Section -->
-        <div class="menu-section" id="achievements">
-          <h2>Achievements</h2>
-          <div class="achievements-list">
-            <!-- Achievements will be populated by JavaScript -->
-          </div>
-        </div>
-
-        <!-- Stats Section -->
-        <div class="menu-section" id="stats">
-          <h2>Statistics</h2>
-          <div class="stats-list">
-            <!-- Stats will be populated by JavaScript -->
+            <button data-theme="CLASSIC" data-cost="0">Classic (Free)</button>
+            <button data-theme="NEON" data-cost="1000">Neon (1000 MP)</button>
+            <button data-theme="RETRO" data-cost="2000">Retro (2000 MP)</button>
+            <button data-theme="MINIMAL" data-cost="3000">Minimal (3000 MP)</button>
           </div>
         </div>
       </div>
 
       <div class="main-buttons">
-        <button id="playButton">Play Game</button>
-        <button id="shopButton">Shop</button>
-        <button id="quitFromMenuButton">Quit</button>
+        <button id="playButton" class="menu-button">Play Game</button>
+        <button id="quitFromMenuButton" class="menu-button">Quit</button>
       </div>
     </div>
   </div>
@@ -90,15 +83,33 @@
   </div>
   <div id="pauseScreen" class="overlay">
     <div class="menu-content">
-      <h2>Game Paused</h2>
-      <button id="resumeButton">Resume</button>
-      <button id="quitFromPauseButton">Quit</button>
+        <h2>Game Paused</h2>
+        <div class="pause-sections">
+            <div class="pause-section">
+                <h3>Run Achievements</h3>
+                <div class="run-achievements-list">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div class="pause-section">
+                <h3>Shop</h3>
+                <div class="pause-shop-items">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+        <div class="temp-points">Current Run Points: <span id="tempPoints">0</span></div>
+        <button id="resumeButton">Resume</button>
+        <button id="quitFromPauseButton">Quit</button>
     </div>
   </div>
   
   <script src="script.js"></script>
   <div class="touch-controls-hint">
     Tap to rotate • Swipe left/right to move • Swipe down to drop
+  </div>
+  <div class="score-display-game">
+    Score: <span id="currentScore">0</span>
   </div>
 </body>
 </html>
