@@ -251,7 +251,6 @@ const THEME_COSTS = {
 };
 
 // Add these variables to your game state
-let tempPoints = 0;
 let megaPoints = parseInt(localStorage.getItem('megaPoints')) || 0;
 
 // Mega Points Shop items and costs
@@ -311,32 +310,10 @@ const NORMAL_SHOP_ITEMS = {
   CLEAR_ROWS: { cost: 200, description: "Clear 2 random rows" },
 };
 
-// Update Normal Points display
-function updateTempPointsDisplay() {
-  document.getElementById('tempPointsDisplay').textContent = tempPoints;
-}
-
-// Populate Normal Points Shop
-function populateNormalShop() {
-  const shopContainer = document.getElementById('normalShop');
-  shopContainer.innerHTML = Object.entries(NORMAL_SHOP_ITEMS)
-    .map(([id, item]) => `
-      <div class="shop-item">
-        <h3>${item.description}</h3>
-        <p>Cost: ${item.cost} Points</p>
-        <button onclick="buyNormalShopItem('${id}')" ${tempPoints < item.cost ? 'disabled' : ''}>
-          Buy
-        </button>
-      </div>
-    `).join('');
-}
-
-// Handle Normal Points Shop purchase
 function buyNormalShopItem(id) {
   const item = NORMAL_SHOP_ITEMS[id];
-  if (tempPoints >= item.cost) {
-    tempPoints -= item.cost;
-    updateTempPointsDisplay();
+  if (points >= item.cost) {
+    points -= item.cost;
     populateNormalShop();
     alert(`Purchased: ${item.description}`);
     applyNormalShopEffect(id); // Apply the purchased effect
@@ -362,8 +339,6 @@ function applyNormalShopEffect(id) {
 
 // Initialize game
 function initGame() {
-  tempPoints = 0;
-  updateTempPointsDisplay();
   loadStats(); // Load stats when the game initializes
   updateStatsDisplay(); // Update stats display initially
   // Other game initialization logic...
@@ -386,12 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ?.classList.add('selected');
   document.querySelector(`#gameModes button[data-mode="${currentMode}"]`)
       ?.classList.add('selected');
-});
-
-// Call these functions when the pause menu loads
-document.addEventListener('DOMContentLoaded', () => {
-  updateTempPointsDisplay();
-  populateNormalShop();
 });
 
 function startRandomChallenge() {
@@ -1432,28 +1401,66 @@ function activatePowerUp(type, x, y) {
 }
 
 function openShop() {
-  if (isPaused) return;
-  togglePause();
-  
-  const shopMenu = document.createElement('div');
-  shopMenu.className = 'shop-menu';
-  shopMenu.innerHTML = `
-      <h2>Power-Up Shop</h2>
-      <div class="shop-items">
-          ${Object.entries(SHOP_ITEMS).map(([id, item]) => `
+  if (isPaused) {
+      const shopMenu = document.createElement('div');
+      shopMenu.className = 'shop-menu';
+      shopMenu.innerHTML = `
+          <h2>Shop</h2>
+          <div class="current-points">Points: ${score}</div>
+          <div class="shop-items">
               <div class="shop-item">
-                  <h3>${id}</h3>
-                  <p>${item.description}</p>
-                  <button onclick="purchaseItem('${id}')" 
-                          ${score < item.cost ? 'disabled' : ''}>
-                      Buy (${item.cost} points)
+                  <h3>Slow Time</h3>
+                  <p>Slow down piece falling for 10 seconds</p>
+                  <button onclick="buyShopItem('SLOW_TIME', 100)" ${score < 100 ? 'disabled' : ''}>
+                      Buy (100 points)
                   </button>
               </div>
-          `).join('')}
-      </div>
-      <button onclick="closeShop()">Close</button>
-  `;
-  document.body.appendChild(shopMenu);
+              <div class="shop-item">
+                  <h3>Clear Row</h3>
+                  <p>Clear the bottom row</p>
+                  <button onclick="buyShopItem('CLEAR_ROW', 200)" ${score < 200 ? 'disabled' : ''}>
+                      Buy (200 points)
+                  </button>
+              </div>
+          </div>
+          <button onclick="closeShop()">Close</button>
+      `;
+      document.body.appendChild(shopMenu);
+  }
+}
+
+function buyShopItem(itemId, cost) {
+  if (score >= cost) {
+      score -= cost;
+      
+      switch(itemId) {
+          case 'SLOW_TIME':
+              dropInterval *= 2;
+              setTimeout(() => dropInterval /= 2, 10000);
+              break;
+          case 'CLEAR_ROW':
+              // Remove bottom row and shift everything down
+              board.splice(ROWS-1, 1); // Remove bottom row
+              board.unshift(Array(COLS).fill(0)); // Add new empty row at top
+              break;
+      }
+      
+      updateScoreDisplay();
+      closeShop();
+  }
+}
+
+function updateScoreDisplay() {
+  document.getElementById('currentScore').textContent = score;
+}
+
+document.getElementById('shopButton').addEventListener('click', openShop);
+
+function closeShop() {
+  const shopMenu = document.querySelector('.shop-menu');
+  if (shopMenu) {
+      shopMenu.remove();
+  }
 }
 
 function completeChallenge() {
@@ -2006,7 +2013,6 @@ function updateMegaPointsDisplay() {
 
 function updateScoreDisplay() {
     document.getElementById('currentScore').textContent = score;
-    document.getElementById('tempPoints').textContent = tempPoints;
 }
 
 function initGameMode(mode) {
