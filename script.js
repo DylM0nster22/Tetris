@@ -70,6 +70,9 @@ let isPaused = false;
 let highScore = localStorage.getItem('tetrisHighScore') || 0;
 let board = JSON.parse(JSON.stringify(BOARD));
 let gameStarted = false;
+let gameStartTime = null;
+let currentGameTime = 0;
+let sessionStartTime = Date.now();
 let previousStates = [];
 let touchStartX = null;
 let touchStartY = null;
@@ -166,13 +169,16 @@ const GAME_MODES = {
 };
 
 // Add near the top with other game state variables
+// Example of a global STATS object
 const STATS = {
-    totalPiecesPlaced: 0,
-    totalLinesCleared: 0,
-    longestGame: 0,
-    highestCombo: 0,
-    powerUpsUsed: 0,
-    challengesCompleted: 0
+  totalPiecesPlaced: 0,
+  totalLinesCleared: 0,
+  longestGame: 0,
+  highestCombo: 0,
+  powerUpsUsed: 0,
+  challengesCompleted: 0,
+  totalPlayTime: 0,
+  highestScore: 0
 };
 
 // Add near the top with other constants
@@ -238,10 +244,10 @@ const RUN_ACHIEVEMENTS = {
 };
 
 const THEME_COSTS = {
-    CLASSIC: 0,
-    NEON: 1000,
-    RETRO: 2000,
-    MINIMAL: 3000
+    CLASSIC: 0,      // Free
+    NEON: 800,       // Reduced from 1000
+    RETRO: 1500,     // Reduced from 2000
+    MINIMAL: 2000    // Reduced from 3000
 };
 
 // Add these variables to your game state
@@ -250,9 +256,9 @@ let megaPoints = parseInt(localStorage.getItem('megaPoints')) || 0;
 
 // Mega Points Shop items and costs
 const MEGA_SHOP_ITEMS = {
-  NEON: { cost: 1000, description: "Neon Theme" },
-  RETRO: { cost: 2000, description: "Retro Theme" },
-  MINIMAL: { cost: 3000, description: "Minimal Theme" },
+  NEON: { cost: 800, description: "Neon Theme" },
+  RETRO: { cost: 1500, description: "Retro Theme" },
+  MINIMAL: { cost: 2000, description: "Minimal Theme" },
 };
 
 // Update Mega Points display
@@ -277,14 +283,23 @@ function populateMegaShop() {
 
 // Handle Mega Points Shop purchase
 function buyMegaShopItem(id) {
-  const item = MEGA_SHOP_ITEMS[id];
-  if (megaPoints >= item.cost) {
-    megaPoints -= item.cost;
+  const cost = THEME_COSTS[id];
+  if (megaPoints >= cost) {
+    megaPoints -= cost;
     localStorage.setItem('megaPoints', megaPoints);
-    localStorage.setItem(`themePurchased_${id}`, 'true'); // Mark theme as purchased
+    localStorage.setItem(`themePurchased_${id}`, 'true');
     updateMegaPointsDisplay();
-    populateMegaShop();
-    alert(`Purchased: ${item.description}`);
+    
+    // Update all theme buttons after purchase
+    document.querySelectorAll('#themeSelector button, .theme-buttons button').forEach(button => {
+      const theme = button.getAttribute('data-theme');
+      if (theme === id) {
+        button.disabled = false;
+        button.classList.remove('locked');
+      }
+    });
+    
+    alert(`Purchased ${id} theme!`);
   } else {
     alert('Not enough Mega Points!');
   }
@@ -349,6 +364,8 @@ function applyNormalShopEffect(id) {
 function initGame() {
   tempPoints = 0;
   updateTempPointsDisplay();
+  loadStats(); // Load stats when the game initializes
+  updateStatsDisplay(); // Update stats display initially
   // Other game initialization logic...
 }
 
@@ -357,6 +374,18 @@ document.addEventListener('DOMContentLoaded', () => {
   megaPoints = parseInt(localStorage.getItem('megaPoints')) || 0;
   updateMegaPointsDisplay();
   populateMegaShop();
+  initializeAchievements();
+  initializeStats(); // Ensure stats are initialized
+  initializeMegaAchievements();
+  
+  // Set initial theme and mode selections
+  const currentTheme = localStorage.getItem('currentTheme') || 'CLASSIC';
+  const currentMode = localStorage.getItem('gameMode') || 'CLASSIC';
+  
+  document.querySelector(`#themeSelector button[data-theme="${currentTheme}"]`)
+      ?.classList.add('selected');
+  document.querySelector(`#gameModes button[data-mode="${currentMode}"]`)
+      ?.classList.add('selected');
 });
 
 // Call these functions when the pause menu loads
@@ -755,24 +784,91 @@ function lockPiece() {
         const y = currentPiece.y + dy;
         if (y >= 0) {
           board[y][x] = value;
-          if (value >= 8) {
-            activatePowerUp(value, x, y);
-          }
         }
       }
     });
   });
   STATS.totalPiecesPlaced++;
+  saveGameState();
+  updateStatsDisplay();
   saveStats();
 }
 
+// Add near the top with other constants
+const MODE_DESCRIPTIONS = {
+    CLASSIC: "The original Tetris experience",
+    SPRINT: "Clear 40 lines as fast as possible",
+    ULTRA: "Score as many points as possible in 2 minutes",
+    SURVIVAL: "Survive as long as possible with increasing speed"
+};
+
+// Update the game mode event listeners
+document.querySelectorAll('#gameModes button, .mode-buttons button').forEach(button => {
+    button.addEventListener('mouseover', () => {
+        const mode = button.dataset.mode;
+        const description = MODE_DESCRIPTIONS[mode];
+        document.getElementById('modeDescription').textContent = description;
+    });
+    
+    button.addEventListener('mouseout', () => {
+        document.getElementById('modeDescription').textContent = '';
+    });
+});
+
+// Tab switching functionality
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        
+        // Remove active class from all tabs and sections
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
+        
+        // Add active class to clicked tab and corresponding section
+        button.classList.add('active');
+        document.getElementById(button.dataset.tab + 'Section').classList.add('active');
+    });
+});
+
+// Update stats display
+function updateStatsDisplay() {
+  document.getElementById('totalPiecesPlaced').textContent = STATS.totalPiecesPlaced;
+  document.getElementById('totalLinesCleared').textContent = STATS.totalLinesCleared;
+  document.getElementById('longestGame').textContent = Math.floor(STATS.longestGame / 1000) + 's';
+  document.getElementById('highestCombo').textContent = STATS.highestCombo;
+  document.getElementById('powerUpsUsed').textContent = STATS.powerUpsUsed;
+  document.getElementById('challengesCompleted').textContent = STATS.challengesCompleted;
+  document.getElementById('totalPlayTime').textContent = Math.floor(STATS.totalPlayTime / 1000) + 's';
+  document.getElementById('highestScore').textContent = STATS.highestScore;
+}
+// Initialize menu function
+function initializeMenu() {
+    updateStatsDisplay();
+    populateMegaShop();
+    // Any other initialization needed
+}
+
+// Update the existing update function
 function update(time = 0) {
     if (!gameStarted || isPaused || isInMainMenu) return;
+
+    if (gameStartTime === null) {
+      gameStartTime = Date.now();
+    }
+    currentGameTime = Date.now() - gameStartTime;
     
     const deltaTime = time - lastDropTime;
     if (deltaTime > dropInterval) {
         dropPiece();
         lastDropTime = time;
+    }
+
+        // Update total play time
+    STATS.totalPlayTime = Number(STATS.totalPlayTime) + (Date.now() - sessionStartTime);
+    sessionStartTime = Date.now();
+        
+    // Update longest game stat
+    if (currentGameTime > STATS.longestGame) {
+        STATS.longestGame = currentGameTime;
     }
     
     const shadowPiece = getShadowPiece(currentPiece);
@@ -921,32 +1017,45 @@ document.addEventListener('keydown', event => {
 
 // Add these event listeners after your existing ones
 
-// Theme selection
-document.querySelectorAll('#themeSelector button').forEach(button => {
-  const theme = button.getAttribute('data-theme');
-  const cost = THEME_COSTS[theme];
-
-  // Remove cost display from button
-  button.textContent = theme.charAt(0) + theme.slice(1).toLowerCase();
-
-  // Update button state based on purchase status
-  function updateButtonState() {
-    const purchased = localStorage.getItem(`themePurchased_${theme}`) === 'true';
-    button.disabled = !purchased;
-    if (localStorage.getItem('currentTheme') === theme) {
-      button.classList.add('selected');
+// Theme selection with proper locking
+document.querySelectorAll('#themeSelector button, .theme-buttons button').forEach(button => {
+    const theme = button.getAttribute('data-theme');
+    const cost = THEME_COSTS[theme];
+    
+    function updateButtonState() {
+        const purchased = localStorage.getItem(`themePurchased_${theme}`) === 'true';
+        if (theme === 'CLASSIC') {
+            button.disabled = false;
+            button.classList.remove('locked');
+        } else if (!purchased) {
+            button.disabled = true;
+            button.classList.add('locked');
+            button.setAttribute('title', `Costs ${cost} MP`);
+        } else {
+            button.disabled = false;
+            button.classList.remove('locked');
+        }
+        
+        if (localStorage.getItem('currentTheme') === theme) {
+            button.classList.add('selected');
+        }
     }
-  }
-
-  updateButtonState();
-
-  button.addEventListener('click', () => {
-    if (localStorage.getItem(`themePurchased_${theme}`) === 'true') {
-      localStorage.setItem('currentTheme', theme);
-      document.querySelectorAll('#themeSelector button').forEach(b => b.classList.remove('selected'));
-      button.classList.add('selected');
-    }
-  });
+    
+    updateButtonState();
+    
+    button.addEventListener('click', () => {
+        const purchased = localStorage.getItem(`themePurchased_${theme}`) === 'true';
+        if (theme === 'CLASSIC' || purchased) {
+            localStorage.setItem('currentTheme', theme);
+            document.querySelectorAll('#themeSelector button, .theme-buttons button').forEach(b => {
+                b.classList.remove('selected');
+                updateButtonState();
+            });
+            button.classList.add('selected');
+        } else {
+            alert(`This theme is locked! Earn ${cost} Mega Points to unlock it.`);
+        }
+    });
 });
 
 // Game mode selection
@@ -968,13 +1077,15 @@ document.getElementById('shopButton').addEventListener('click', openShop);
 // Initialize achievements display
 function initializeAchievements() {
   const achievementsContainer = document.querySelector('.achievements-list');
+  if (!achievementsContainer) return; // Guard clause
+  
   achievementsContainer.innerHTML = Object.entries(ACHIEVEMENTS)
-      .map(([id, achievement]) => `
-          <div class="achievement-item ${achievement.earned ? 'earned' : ''}">
-              <div>${achievement.description}</div>
-              <div class="reward">Reward: ${achievement.reward} points</div>
-          </div>
-      `).join('');
+    .map(([id, achievement]) => `
+      <div class="achievement-item ${achievement.earned ? 'earned' : ''}">
+        <div>${achievement.description}</div>
+        <div class="reward">Reward: ${achievement.reward} points</div>
+      </div>
+    `).join('');
 }
 
 // Initialize stats display
@@ -991,9 +1102,13 @@ function initializeStats() {
 }
 
 // Call these when the game loads
-window.addEventListener('load', () => {
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize all UI elements
   initializeAchievements();
   initializeStats();
+  initializeMegaAchievements();
+  loadStats();            // Pull from localStorage into STATS
+  updateStatsDisplay();
   
   // Set initial theme and mode selections
   const currentTheme = localStorage.getItem('currentTheme') || 'CLASSIC';
@@ -1006,21 +1121,21 @@ window.addEventListener('load', () => {
 });
 
 function showGameOver() {
-    cancelAnimationFrame(animationId); // Stop the game loop
-    gameOverScreen.style.display = 'flex'; // Show the game over screen
-    isInMainMenu = false; // Ensure main menu state is correct
-    
-    // Update final score
-    finalScoreElement.textContent = score;
-    
-    // Check and update high score
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('tetrisHighScore', highScore);
-    }
-    
-    // Update high score display
-    highScoreElement.textContent = highScore;
+  cancelAnimationFrame(animationId);
+  gameOverScreen.style.display = 'flex';
+  isInMainMenu = false;
+  
+  finalScoreElement.textContent = score;
+  
+  if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('tetrisHighScore', highScore);
+      // Update the stats highest score as well
+      STATS.highestScore = highScore;
+      saveStats();
+  }
+  
+  highScoreElement.textContent = highScore;
 }
 
 function hideGameOver() {
@@ -1077,6 +1192,8 @@ function clearLines() {
       comboCount++;
       score += comboCount * 50; // Bonus points for combos
       updateScoreDisplay(); // Update score display
+      updateStatsDisplay();
+      saveStats();
       showComboMessage(comboCount);
     } else {
       comboCount = 0;
@@ -1149,6 +1266,7 @@ function clearLines() {
   }
 
   STATS.totalLinesCleared += linesCleared;
+  saveStats(); // Now localStorage has the updated number
   if (comboCount > STATS.highestCombo) {
     STATS.highestCombo = comboCount;
   }
@@ -1162,17 +1280,38 @@ function handleOrientationChange() {
   setTimeout(adjustCanvasSize, 100); // Small delay to ensure new dimensions are available
 }
 
-function saveStats() {
-  // Save stats to localStorage
-  localStorage.setItem('tetrisStats', JSON.stringify(STATS));
+function returnToMainMenu() {
+  // Reset game state
+  cancelAnimationFrame(animationId);
+  initGame();
+  
+  // Hide game over and pause screens
+  gameOverScreen.style.display = 'none';
+  pauseScreen.style.display = 'none';
+  
+  // Show main menu
+  document.getElementById('mainMenu').style.display = 'flex';
+  isInMainMenu = true;
 }
 
-// Add this function to load stats when the game starts
+document.getElementById('mainMenuButton').addEventListener('click', returnToMainMenu);
+document.getElementById('mainMenuFromPauseButton').addEventListener('click', returnToMainMenu);
+
 function loadStats() {
   const savedStats = localStorage.getItem('tetrisStats');
   if (savedStats) {
       Object.assign(STATS, JSON.parse(savedStats));
   }
+  // Sync with existing high score if higher
+  const existingHighScore = localStorage.getItem('tetrisHighScore') || 0;
+  if (Number(existingHighScore) > STATS.highestScore) {
+      STATS.highestScore = Number(existingHighScore);
+      saveStats();
+  }
+}
+
+function saveStats() {
+  localStorage.setItem('tetrisStats', JSON.stringify(STATS));
 }
 
 function handleResize() {
@@ -1235,6 +1374,8 @@ function showQuadMessage() {
 }
 
 function activatePowerUp(type, x, y) {
+  STATS.powerUpsUsed++;
+  saveStats();
   if (powerUpsDisabled) return;
 
   switch(type) {
@@ -1345,6 +1486,9 @@ function completeChallenge() {
       break;
     }
   }
+
+  STATS.challengesCompleted++;
+  saveStats();
 
   // Show completion message
   showChallengeComplete(currentChallenge);
@@ -1530,19 +1674,31 @@ function showComboMessage(combo) {
   setTimeout(() => message.remove(), 1000);
 }
 
-
 function startCountdown() {
   const countdown = document.getElementById('countdown');
   let count = 3;
   
+  // Reset game state completely
+  board = JSON.parse(JSON.stringify(BOARD));
+  currentPiece = generatePiece();
+  nextPiece = generatePiece();
+  holdPiece = null;
+  canHold = true;
+  score = 0;
+  dropInterval = 1000;
+  lastDropTime = performance.now();
+  gameStarted = false;  // Reset this flag
+  
   // Cancel any existing animation frame
   if (animationId) {
       cancelAnimationFrame(animationId);
+      animationId = null;  // Clear the ID
   }
   
   // Hide main menu and set state
   document.getElementById('mainMenu').style.display = 'none';
   isInMainMenu = false;
+  isPaused = false;  // Ensure game isn't paused
   
   countdown.classList.remove('hidden');
   countdown.textContent = count;
@@ -1561,6 +1717,11 @@ function startCountdown() {
           countdown.classList.add('hidden');
           gameStarted = true;
           lastDropTime = performance.now();
+          // Force an initial draw of the game state
+          drawBoard(ctx, board);
+          drawPiece(ctx, currentPiece);
+          drawNextPiece();
+          // Start the game loop
           animationId = requestAnimationFrame(update);
       }
   }, 1000);

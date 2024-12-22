@@ -11,48 +11,92 @@
   <div id="mainMenu" class="main-menu">
     <div class="menu-content">
       <h1>TETRIS</h1>
+      
+      <div class="menu-tabs">
+        <button class="tab-button active" data-tab="play">Play</button>
+        <button class="tab-button" data-tab="stats">Stats</button>
+        <button class="tab-button" data-tab="shop">Shop</button>
+        <button class="tab-button" data-tab="achievements">Achievements</button>
+      </div>
+
       <div class="menu-sections">
-        <!-- Game Modes Section -->
-        <div class="menu-section" id="gameModes">
+        <!-- Play Section -->
+        <div class="menu-section active" id="playSection">
           <h2>Game Modes</h2>
           <div class="mode-buttons">
-            <button data-mode="CLASSIC" data-description="Traditional Tetris gameplay">Classic</button>
-            <button data-mode="SPRINT" data-description="Clear 40 lines as fast as possible">Sprint</button>
-            <button data-mode="ULTRA" data-description="Score as many points in 3 minutes">Ultra</button>
-            <button data-mode="SURVIVAL" data-description="Pieces fall faster with each line cleared">Survival</button>
+            <button data-mode="CLASSIC">Classic</button>
+            <button data-mode="SPRINT">Sprint</button>
+            <button data-mode="ULTRA">Ultra</button>
+            <button data-mode="SURVIVAL">Survival</button>
           </div>
           <div id="modeDescription" class="mode-description"></div>
+          
+          <h2>Themes</h2>
+          <div class="theme-buttons">
+            <button data-theme="CLASSIC">Classic</button>
+            <button data-theme="NEON">Neon</button>
+            <button data-theme="RETRO">Retro</button>
+            <button data-theme="MINIMAL">Minimal</button>
+          </div>
         </div>
 
-        <!-- Mega Achievements Section -->
-        <div class="menu-section" id="megaAchievements">
+        <!-- Stats Section -->
+        <div class="menu-section" id="statsSection">
+          <h2>Your Stats</h2>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <h3>Total Pieces Placed</h3>
+              <p id="totalPiecesPlaced">0</p>
+            </div>
+            <div class="stat-item">
+              <h3>Total Lines Cleared</h3>
+              <p id="totalLinesCleared">0</p>
+            </div>
+            <div class="stat-item">
+              <h3>Longest Game</h3>
+              <p id="longestGame">0</p>
+            </div>
+            <div class="stat-item">
+              <h3>Highest Combo</h3>
+              <p id="highestCombo">0</p>
+            </div>
+            <div class="stat-item">
+              <h3>Power-Ups Used</h3>
+              <p id="powerUpsUsed">0</p>
+            </div>
+            <div class="stat-item">
+              <h3>Challenges Completed</h3>
+              <p id="challengesCompleted">0</p>
+            </div>
+            <div class="stat-item">
+              <h3>Total Play Time</h3>
+              <p id="totalPlayTime">0</p>
+            </div>
+            <div class="stat-item">
+              <h3>Highest Score</h3>
+              <p id="highestScore">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shop Section -->
+        <div class="menu-section" id="shopSection">
+          <h2>Mega Points Shop</h2>
+          <div class="mega-points">MP: <span id="megaPointsDisplay">0</span></div>
+          <div class="mega-shop-items">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Achievements Section -->
+        <div class="menu-section" id="achievementsSection">
           <h2>Mega Achievements</h2>
           <div class="mega-achievements-list">
             <!-- Will be populated by JavaScript -->
           </div>
-          <div class="mega-points">Mega Points: <span id="megaPoints">0</span></div>
-        </div>
-
-        <div class="achievements-list">
-          <!-- Achievements will be populated here -->
-        </div>
-
-        <div id="megaShop" class="menu-section">
-          <h2>Mega Points Shop</h2>
-          <div class="mega-shop-items">
-            <!-- Items populated dynamically -->
-          </div>
-          <div class="mega-points-display">Mega Points: <span id="megaPointsDisplay">0</span></div>
-        </div>
-
-        <!-- Themes Section -->
-        <div class="menu-section" id="themeSelector">
-          <h2>Themes</h2>
-          <div class="theme-buttons">
-            <button data-theme="CLASSIC" data-cost="0">Classic (Free)</button>
-            <button data-theme="NEON" data-cost="1000">Neon (1000 MP)</button>
-            <button data-theme="RETRO" data-cost="2000">Retro (2000 MP)</button>
-            <button data-theme="MINIMAL" data-cost="3000">Minimal (3000 MP)</button>
+          <h2>Run Achievements</h2>
+          <div class="achievements-list">
+            <!-- Will be populated by JavaScript -->
           </div>
         </div>
       </div>
@@ -89,6 +133,7 @@
       </div>
       <div class="buttons">
         <button id="retryButton">Play Again</button>
+        <button id="mainMenuButton">Main Menu</button>
         <button id="quitButton">Quit Game</button>
       </div>
     </div>
@@ -121,6 +166,7 @@
         </div>
         <div class="temp-points">Current Run Points: <span id="tempPoints">0</span></div>
         <button id="resumeButton">Resume</button>
+        <button id="mainMenuFromPauseButton">Main Menu</button>
         <button id="quitFromPauseButton">Quit</button>
     </div>
   </div>
