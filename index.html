@@ -17,7 +17,8 @@
         <button class="tab-button" data-tab="stats">Stats</button>
         <button class="tab-button" data-tab="shop">Shop</button>
         <button class="tab-button" data-tab="achievements">Achievements</button>
-      </div>
+        <button class="tab-button" data-tab="multiplayer">Multiplayer</button>
+    </div>
 
       <div class="menu-sections">
         <!-- Play Section -->
@@ -95,7 +96,25 @@
             <!-- Will be populated by JavaScript -->
           </div>
         </div>
-      </div>
+        
+      <div class="menu-section" id="multiplayerSection">
+        <div class="multiplayer-content">
+            <div id="multiplayerControls" class="multiplayer-controls">
+                <h3>Join or Create a Game</h3>
+                <button id="createRoom" class="menu-button">Create Room</button>
+                <div class="join-room">
+                    <input type="text" id="roomCode" placeholder="Enter Room Code">
+                    <button id="joinRoom" class="menu-button">Join Room</button>
+                </div>
+            </div>
+            <div id="roomInfo" class="room-info"></div>
+            <div id="opponentBoard" class="opponent-board" style="display: none;">
+                <h3>Opponent's Board</h3>
+                <canvas id="opponentCanvas" width="300" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
 
       <div class="main-buttons">
         <button id="playButton" class="menu-button">Play Game</button>
@@ -107,15 +126,23 @@
   <div id="countdown" class="countdown hidden">3</div>
 
   <div class="game-container">
-    <canvas id="gameCanvas" width="300" height="600"></canvas>
-    <div class="info-panel">
-      <div class="next-piece">
-        <h3>Next</h3>
-        <canvas id="nextCanvas" width="100" height="100"></canvas>
+    <div class="game-boards">
+      <div class="player-board">
+        <canvas id="gameCanvas" width="300" height="600"></canvas>
+        <div class="info-panel">
+          <div class="next-piece">
+            <h3>Next</h3>
+            <canvas id="nextCanvas" width="100" height="100"></canvas>
+          </div>
+          <div class="hold-piece">
+            <h3>Hold</h3>
+            <canvas id="holdCanvas" width="100" height="100"></canvas>
+          </div>
+        </div>
       </div>
-      <div class="hold-piece">
-        <h3>Hold</h3>
-        <canvas id="holdCanvas" width="100" height="100"></canvas>
+      <div class="opponent-board">
+        <h3>Opponent's Board</h3>
+        <canvas id="opponentCanvas" width="300" height="600"></canvas>
       </div>
     </div>
   </div>
@@ -158,19 +185,7 @@
         <button id="quitFromPauseButton">Quit</button>
     </div>
   </div>
-  <div class="menu-section" id="multiplayerSection">
-    <h2>Multiplayer</h2>
-    <div class="multiplayer-controls">
-      <button id="createRoom" class="menu-button">Create Room</button>
-      <div class="join-room">
-        <input type="text" id="roomCode" placeholder="Enter Room Code">
-        <button id="joinRoom" class="menu-button">Join Room</button>
-      </div>
-    </div>
-    <div id="roomInfo" class="room-info"></div>
-    <canvas id="opponentCanvas" width="300" height="600"></canvas>
-  </div>
-  
+
   <script src="script.js"></script>
   <div class="touch-controls-hint">
     Tap to rotate • Swipe left/right to move • Swipe down to drop

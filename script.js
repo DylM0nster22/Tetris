@@ -329,9 +329,30 @@ function updateOpponentBoard(gameState) {
   const opponentCanvas = document.getElementById('opponentCanvas');
   const opponentCtx = opponentCanvas.getContext('2d');
   
-  drawBoard(opponentCtx, gameState.board);
+  // Clear the canvas
+  opponentCtx.clearRect(0, 0, opponentCanvas.width, opponentCanvas.height);
+  
+  // Draw the opponent's board
+  if (gameState.board) {
+    gameState.board.forEach((row, y) => {
+      row.forEach((value, x) => {
+        if (value !== 0) {
+          drawBlock(opponentCtx, x, y, COLORS[value]);
+        }
+      });
+    });
+  }
+  
+  // Draw the opponent's current piece
   if (gameState.currentPiece) {
-    drawPiece(opponentCtx, gameState.currentPiece);
+    const piece = gameState.currentPiece;
+    piece.shape.forEach((row, dy) => {
+      row.forEach((value, dx) => {
+        if (value !== 0) {
+          drawBlock(opponentCtx, piece.x + dx, piece.y + dy, COLORS[value]);
+        }
+      });
+    });
   }
 }
 
@@ -842,19 +863,25 @@ document.querySelectorAll('#gameModes button, .mode-buttons button').forEach(but
     });
 });
 
-// Tab switching functionality
 document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', () => {
-        
         // Remove active class from all tabs and sections
         document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
         
         // Add active class to clicked tab and corresponding section
         button.classList.add('active');
-        document.getElementById(button.dataset.tab + 'Section').classList.add('active');
+        const section = document.getElementById(button.dataset.tab + 'Section');
+        section.classList.add('active');
+        
+        // Special handling for multiplayer section
+        if (button.dataset.tab === 'multiplayer') {
+            section.style.display = 'block';
+            section.style.zIndex = '2001';
+        }
     });
 });
+
 
 // Update stats display
 function updateStatsDisplay() {
@@ -898,17 +925,17 @@ function update(time = 0) {
         STATS.longestGame = currentGameTime;
     }
 
-    if (isMultiplayer) {
+    if (isMultiplayer && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
         type: 'game_update',
         gameState: {
           board: board,
           currentPiece: currentPiece,
-          score: score
+          score: score,
+          nextPiece: nextPiece
         }
       }));
-    }
-  
+    }    
     
     const shadowPiece = getShadowPiece(currentPiece);
     drawBoard(ctx, board);

@@ -833,37 +833,98 @@ canvas#gameCanvas {
     white-space: nowrap;
 }
 
-.multiplayer-controls {
+.multiplayer-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin: 20px 0;
+  align-items: center;
+  gap: 30px;
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.game-boards {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+}
+
+.player-board, .opponent-board {
+  text-align: center;
+}
+
+.player-board h3, .opponent-board h3 {
+  margin-bottom: 15px;
+  color: #00ff00;
+}
+
+
+.opponent-board {
+  position: absolute;
+  left: 500px; /* Moves it further right, past the hold piece */
+  top: 0;
+}
+
+.opponent-board h3 {
+  color: #ff0000;
+  margin-top: 10px; /* Moves text below the canvas */
+  text-align: center;
+}
+
+.opponent-board.active {
+  display: block !important;
+}
+
+#opponentCanvas {
+  border: 3px solid #ff0000;
+  background-color: rgba(20, 20, 20, 0.9);
+  border-radius: 5px;
+}
+
+.multiplayer-controls {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 30px;
+  border-radius: 15px;
+  border: 2px solid #00ff00;
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .join-room {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
 }
 
 #roomCode {
-  font-family: 'Press Start 2P', cursive;
-  padding: 10px;
-  background: #333;
-  border: 1px solid #00ff00;
+  padding: 15px;
+  font-size: 1.2em;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid #00ff00;
   color: #00ff00;
-}
-
-#opponentCanvas {
-  margin-top: 20px;
-  opacity: 0.7;
-  border: 3px solid #666;
+  border-radius: 8px;
+  font-family: 'Press Start 2P', cursive;
 }
 
 .room-info {
   color: #00ff00;
-  margin: 10px 0;
+  font-size: 1.2em;
+  text-align: center;
   padding: 10px;
   background: rgba(0, 0, 0, 0.5);
-  border-radius: 5px;
+  border-radius: 8px;
+}
+
+#multiplayerControls.hidden {
+    display: none;
+}
+
+#multiplayerSection h2 {
+  display: none;
 }
 

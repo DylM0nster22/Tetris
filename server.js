@@ -58,19 +58,24 @@ wss.on('connection', (ws) => {
         }
         break;
         
-      case 'game_update':
-        if (ws.roomId) {
-          const currentRoom = rooms.get(ws.roomId);
-          currentRoom.players.forEach(player => {
-            if (player !== ws) {
-              player.send(JSON.stringify({
-                type: 'opponent_update',
-                gameState: data.gameState
-              }));
+        case 'game_update':
+            if (ws.roomId) {
+              const currentRoom = rooms.get(ws.roomId);
+              currentRoom.players.forEach(player => {
+                if (player !== ws) {
+                  player.send(JSON.stringify({
+                    type: 'opponent_update',
+                    gameState: {
+                      board: data.gameState.board,
+                      currentPiece: data.gameState.currentPiece,
+                      score: data.gameState.score,
+                      nextPiece: data.gameState.nextPiece
+                    }
+                  }));
+                }
+              });
             }
-          });
-        }
-        break;
+            break;          
     }
   });
 
