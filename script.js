@@ -272,17 +272,23 @@ ws.onmessage = (event) => {
   
   switch(data.type) {
     case 'room_created':
+      console.log('Room created with ID:', data.roomId);
       roomId = data.roomId;
       document.getElementById('roomInfo').textContent = `Room Code: ${roomId}`;
       break;
       
     case 'game_start':
+      console.log('Game starting in multiplayer mode');
       isMultiplayer = true;
       document.getElementById('roomInfo').textContent = data.message;
+      document.getElementById('opponentBoard').style.display = 'block';
+      document.querySelector('.opponent-board').style.display = 'block'; // Add this line
       startCountdown();
       break;
       
+      
     case 'opponent_update':
+      console.log('Opponent update received:', data.gameState);
       updateOpponentBoard(data.gameState);
       break;
       
@@ -329,10 +335,18 @@ function updateOpponentBoard(gameState) {
   const opponentCanvas = document.getElementById('opponentCanvas');
   const opponentCtx = opponentCanvas.getContext('2d');
   
-  // Clear the canvas
+  // Clear the entire opponent canvas first
   opponentCtx.clearRect(0, 0, opponentCanvas.width, opponentCanvas.height);
   
-  // Draw the opponent's board
+  // Draw the base grid
+  opponentCtx.strokeStyle = '#333';
+  for (let x = 0; x < COLS; x++) {
+    for (let y = 0; y < ROWS; y++) {
+      opponentCtx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    }
+  }
+  
+  // Draw the fixed blocks on the board
   if (gameState.board) {
     gameState.board.forEach((row, y) => {
       row.forEach((value, x) => {
@@ -343,16 +357,9 @@ function updateOpponentBoard(gameState) {
     });
   }
   
-  // Draw the opponent's current piece
+  // Draw the current piece
   if (gameState.currentPiece) {
-    const piece = gameState.currentPiece;
-    piece.shape.forEach((row, dy) => {
-      row.forEach((value, dx) => {
-        if (value !== 0) {
-          drawBlock(opponentCtx, piece.x + dx, piece.y + dy, COLORS[value]);
-        }
-      });
-    });
+    drawPiece(opponentCtx, gameState.currentPiece);
   }
 }
 
@@ -1358,6 +1365,16 @@ function returnToMainMenu() {
   // Show main menu
   document.getElementById('mainMenu').style.display = 'flex';
   isInMainMenu = true;
+
+  isMultiplayer = false;
+  roomId = null;
+  document.getElementById('roomInfo').textContent = '';
+  document.getElementById('multiplayerControls').style.display = 'none';
+  document.getElementById('opponentBoard').style.display = 'none';
+  
+  // Show main menu
+  document.getElementById('mainMenu').style.display = 'flex';
+  isInMainMenu = true;
 }
 
 document.getElementById('mainMenuButton').addEventListener('click', returnToMainMenu);
@@ -1797,6 +1814,14 @@ function startCountdown() {
   if (animationId) {
       cancelAnimationFrame(animationId);
       animationId = null;  // Clear the ID
+  }
+
+  if (isMultiplayer) {
+    const opponentBoard = document.getElementById('opponentBoard');
+    opponentBoard.style.display = 'block';
+    // Position it next to the main board
+    opponentBoard.style.position = 'relative';
+    opponentBoard.style.marginLeft = '20px';
   }
   
   // Hide main menu and set state

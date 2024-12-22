@@ -108,14 +108,9 @@
                 </div>
             </div>
             <div id="roomInfo" class="room-info"></div>
-            <div id="opponentBoard" class="opponent-board" style="display: none;">
-                <h3>Opponent's Board</h3>
-                <canvas id="opponentCanvas" width="300" height="600"></canvas>
-            </div>
         </div>
     </div>
 </div>
-
       <div class="main-buttons">
         <button id="playButton" class="menu-button">Play Game</button>
         <button id="quitFromMenuButton" class="menu-button">Quit</button>
@@ -140,12 +135,20 @@
           </div>
         </div>
       </div>
-      <div class="opponent-board">
+      <div id="opponentBoard" class="opponent-board" style="display: none;">
         <h3>Opponent's Board</h3>
         <canvas id="opponentCanvas" width="300" height="600"></canvas>
-      </div>
-    </div>
-  </div>
+        <div class="info-panel">
+          <div class="next-piece">
+            <h3>Next</h3>
+            <canvas id="opponentNextCanvas" width="100" height="100"></canvas>
+          </div>
+          <div class="hold-piece">
+            <h3>Hold</h3>
+            <canvas id="opponentHoldCanvas" width="100" height="100"></canvas>
+          </div>
+        </div>
+      </div>      
   <div id="quadMessage" class="hidden">QUAD!</div>
   <div id="gameOverScreen" class="game-over hidden">
     <div class="game-over-content">
@@ -184,7 +187,6 @@
         <button id="mainMenuFromPauseButton">Main Menu</button>
         <button id="quitFromPauseButton">Quit</button>
     </div>
-  </div>
 
   <script src="script.js"></script>
   <div class="touch-controls-hint">

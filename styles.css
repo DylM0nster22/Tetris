@@ -21,6 +21,7 @@ body {
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
   max-width: 100%;
   box-sizing: border-box;
+  z-index: 1; /* Add this */
 }
 
 canvas {
@@ -33,11 +34,12 @@ canvas {
 .info-panel {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin-left: 20px;
   padding: 15px;
   background: rgba(40, 40, 40, 0.6);
   border-radius: 10px;
+  min-width: 130px;
 }
 
 .next-piece, .hold-piece {
@@ -289,13 +291,18 @@ canvas#gameCanvas {
 
 /* Add media queries for different screen sizes */
 @media (max-width: 768px) {
+  
   .game-container {
     flex-direction: column;
     align-items: center;
   }
 
+  .game-boards {
+    flex-direction: column;
+  }
+
   .info-panel {
-    margin-left: 0;
+    position: static;
     margin-top: 20px;
     width: 100%;
     flex-direction: row;
@@ -847,10 +854,25 @@ canvas#gameCanvas {
   display: flex;
   align-items: flex-start;
   position: relative;
+  gap: 20px;
+  z-index: 2;
+}
+
+.opponent-board .info-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-left: 20px;
+  padding: 15px;
+  background: rgba(40, 40, 40, 0.6);
+  border-radius: 10px;
+  min-width: 130px;
 }
 
 .player-board, .opponent-board {
-  text-align: center;
+  display: flex;
+  align-items: flex-start;
+  position: relative;
 }
 
 .player-board h3, .opponent-board h3 {
@@ -858,11 +880,15 @@ canvas#gameCanvas {
   color: #00ff00;
 }
 
-
 .opponent-board {
-  position: absolute;
-  left: 500px; /* Moves it further right, past the hold piece */
-  top: 0;
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  margin-left: 20px;
+  background: rgba(20, 20, 20, 0.9);
+  border-radius: 5px;
+  z-index: 10;
+  flex-direction: row; /* Add this */
 }
 
 .opponent-board h3 {
@@ -872,12 +898,12 @@ canvas#gameCanvas {
 }
 
 .opponent-board.active {
-  display: block !important;
+  display: block;
 }
 
 #opponentCanvas {
-  border: 3px solid #ff0000;
   background-color: rgba(20, 20, 20, 0.9);
+  border: 3px solid #ff0000;
   border-radius: 5px;
 }
 
@@ -927,4 +953,14 @@ canvas#gameCanvas {
 #multiplayerSection h2 {
   display: none;
 }
+
+#multiplayerControls, #roomInfo {
+  display: none;
+}
+
+#multiplayerSection #multiplayerControls,
+#multiplayerSection #roomInfo {
+  display: block;
+}
+
 
