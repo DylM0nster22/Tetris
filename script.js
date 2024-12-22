@@ -15,6 +15,7 @@ const resumeButton = document.getElementById('resumeButton');
 const quitFromPauseButton = document.getElementById('quitFromPauseButton');
 const SWIPE_THRESHOLD = 50; // Minimum swipe distance
 const TAP_THRESHOLD = 10; // Maximum distance for a tap
+const ws = new WebSocket(`wss://tetris-te4z.onrender.com`);
 
 const COLS = 10;
 const ROWS = 20;
@@ -79,6 +80,8 @@ let touchStartY = null;
 let touchStartTime = null;
 let powerUpsDisabled = false;
 let weatherDisabled = false;
+let isMultiplayer = false;
+let roomId = null;
 
 
 let comboCount = 0;
@@ -260,6 +263,39 @@ const MEGA_SHOP_ITEMS = {
   MINIMAL: { cost: 2000, description: "Minimal Theme" },
 };
 
+ws.onopen = () => {
+  console.log('Connected to server');
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  switch(data.type) {
+    case 'room_created':
+      roomId = data.roomId;
+      document.getElementById('roomInfo').textContent = `Room Code: ${roomId}`;
+      break;
+      
+    case 'game_start':
+      isMultiplayer = true;
+      document.getElementById('roomInfo').textContent = data.message;
+      startCountdown();
+      break;
+      
+    case 'opponent_update':
+      updateOpponentBoard(data.gameState);
+      break;
+      
+    case 'player_left':
+      showMessage(data.message);
+      break;
+      
+    case 'error':
+      showMessage(data.message);
+      break;
+  }
+};
+
 // Update Mega Points display
 function updateMegaPointsDisplay() {
   document.getElementById('megaPointsDisplay').textContent = megaPoints;
@@ -278,6 +314,25 @@ function populateMegaShop() {
         </button>
       </div>
     `).join('');
+}
+
+function createRoom() {
+  ws.send(JSON.stringify({type: 'create_room'}));
+}
+
+function joinRoom() {
+  const code = document.getElementById('roomCode').value;
+  ws.send(JSON.stringify({type: 'join_room', roomId: code}));
+}
+
+function updateOpponentBoard(gameState) {
+  const opponentCanvas = document.getElementById('opponentCanvas');
+  const opponentCtx = opponentCanvas.getContext('2d');
+  
+  drawBoard(opponentCtx, gameState.board);
+  if (gameState.currentPiece) {
+    drawPiece(opponentCtx, gameState.currentPiece);
+  }
 }
 
 // Handle Mega Points Shop purchase
@@ -839,6 +894,18 @@ function update(time = 0) {
     if (currentGameTime > STATS.longestGame) {
         STATS.longestGame = currentGameTime;
     }
+
+    if (isMultiplayer) {
+      ws.send(JSON.stringify({
+        type: 'game_update',
+        gameState: {
+          board: board,
+          currentPiece: currentPiece,
+          score: score
+        }
+      }));
+    }
+  
     
     const shadowPiece = getShadowPiece(currentPiece);
     drawBoard(ctx, board);

@@ -3,7 +3,7 @@ const { WebSocketServer } = require('ws');
 const path = require('path');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 
 // Serve static files
 app.use(express.static(path.join(__dirname)));
@@ -16,6 +16,7 @@ const server = app.listen(port, () => {
 const wss = new WebSocketServer({ server });
 
 const rooms = new Map();
+const players = new Map();
 
 wss.on('connection', (ws) => {
   console.log('New client connected');
@@ -31,7 +32,11 @@ wss.on('connection', (ws) => {
           gameState: null
         });
         ws.roomId = roomId;
-        ws.send(JSON.stringify({type: 'room_created', roomId}));
+        ws.send(JSON.stringify({
+          type: 'room_created', 
+          roomId,
+          message: `Room ${roomId} created!`
+        }));
         break;
         
       case 'join_room':
@@ -40,8 +45,16 @@ wss.on('connection', (ws) => {
           room.players.push(ws);
           ws.roomId = data.roomId;
           room.players.forEach(player => {
-            player.send(JSON.stringify({type: 'game_start'}));
+            player.send(JSON.stringify({
+              type: 'game_start',
+              message: 'Player 2 joined! Game starting...'
+            }));
           });
+        } else {
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Room full or not found'
+          }));
         }
         break;
         
@@ -58,6 +71,25 @@ wss.on('connection', (ws) => {
           });
         }
         break;
+    }
+  });
+
+  ws.on('close', () => {
+    if (ws.roomId) {
+      const room = rooms.get(ws.roomId);
+      if (room) {
+        room.players = room.players.filter(player => player !== ws);
+        if (room.players.length === 0) {
+          rooms.delete(ws.roomId);
+        } else {
+          room.players.forEach(player => {
+            player.send(JSON.stringify({
+              type: 'player_left',
+              message: 'Opponent left the game'
+            }));
+          });
+        }
+      }
     }
   });
 });

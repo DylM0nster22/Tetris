@@ -158,6 +158,18 @@
         <button id="quitFromPauseButton">Quit</button>
     </div>
   </div>
+  <div class="menu-section" id="multiplayerSection">
+    <h2>Multiplayer</h2>
+    <div class="multiplayer-controls">
+      <button id="createRoom" class="menu-button">Create Room</button>
+      <div class="join-room">
+        <input type="text" id="roomCode" placeholder="Enter Room Code">
+        <button id="joinRoom" class="menu-button">Join Room</button>
+      </div>
+    </div>
+    <div id="roomInfo" class="room-info"></div>
+    <canvas id="opponentCanvas" width="300" height="600"></canvas>
+  </div>
   
   <script src="script.js"></script>
   <div class="touch-controls-hint">
