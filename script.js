@@ -732,6 +732,9 @@ function generatePiece() {
   return { id, shape, x: 3, y: 0 };
 }
 
+document.getElementById('createRoom').addEventListener('click', createRoom);
+document.getElementById('joinRoom').addEventListener('click', joinRoom);
+
 function drawPiece(ctx, piece, isShadow = false) {
   piece.shape.forEach((row, dy) => {
     row.forEach((value, dx) => {
